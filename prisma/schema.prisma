@@ -1,13 +1,150 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// ENUMS
+
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ComplaintStatus {
+  PENDING
+  RESOLVED
+}
+
+
+// CORE TABLES
+
+
+model College {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now())
+
+  admins    Admin[]
+  students  Student[]
+  hostels   Hostel[]
+  gallery   Gallery[]
+}
+
+
+// ADMIN
+
+
+model Admin {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  collegeId  String
+  createdAt  DateTime @default(now())
+
+  college    College  @relation(fields: [collegeId], references: [id])
+}
+
+
+// STUDENT
+
+
+model Student {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  roomNumber String?
+  collegeId  String
+  createdAt  DateTime @default(now())
+
+  college    College  @relation(fields: [collegeId], references: [id])
+
+  leaves     Leave[]
+  complaints Complaint[]
+  reviews    Review[]
+}
+
+
+// HOSTEL
+
+
+model Hostel {
+  id         String   @id @default(uuid())
+  name       String
+  location   String
+  capacity   Int
+  collegeId  String
+  createdAt  DateTime @default(now())
+
+  college    College  @relation(fields: [collegeId], references: [id])
+}
+
+
+// LEAVE SYSTEM
+
+
+model Leave {
+  id          String      @id @default(uuid())
+  studentId   String
+  reason      String
+  fromDate    DateTime
+  toDate      DateTime
+  status      LeaveStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+
+  student     Student     @relation(fields: [studentId], references: [id])
+}
+
+
+// COMPLAINT SYSTEM
+
+
+model Complaint {
+  id          String          @id @default(uuid())
+  studentId   String
+  title       String
+  description String
+  status      ComplaintStatus @default(PENDING)
+  createdAt   DateTime        @default(now())
+
+  student     Student         @relation(fields: [studentId], references: [id])
+}
+
+
+// REVIEWS / FEEDBACK
+
+
+model Review {
+  id          String   @id @default(uuid())
+  studentId   String
+  rating      Int      // 1–5
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  student     Student  @relation(fields: [studentId], references: [id])
+}
+
+// GALLERY (FOR GUEST PAGE)
+model Gallery {
+  id         String   @id @default(uuid())
+  imageUrl   String
+  caption    String?
+  collegeId  String
+  createdAt  DateTime @default(now())
+
+  college    College  @relation(fields: [collegeId], references: [id])
 }
