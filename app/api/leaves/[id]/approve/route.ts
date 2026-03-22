@@ -4,11 +4,15 @@ import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 
 // PUT /api/leaves/:id/approve — only the assigned member (or admin) can approve
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
 
-    const leave = await prisma.leave.findUnique({ where: { id: params.id } })
+    const leave = await prisma.leave.findUnique({ where: { id } })
     if (!leave || leave.collegeId !== session.collegeId) return err('Not found', 404)
     if (leave.status !== 'PENDING') return err('Leave is not in PENDING status', 409)
 
@@ -19,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (session.type === 'STUDENT') return err('Forbidden', 403)
 
     const updated = await prisma.leave.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: 'APPROVED',
         reviewedById: session.sub,

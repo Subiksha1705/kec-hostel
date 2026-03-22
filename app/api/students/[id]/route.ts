@@ -12,16 +12,20 @@ const updateSchema = z.object({
 })
 
 // PUT /api/students/:id — Admin only
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
-    const student = await prisma.student.findUnique({ where: { id: params.id } })
+    const student = await prisma.student.findUnique({ where: { id } })
     if (!student || student.collegeId !== session.collegeId) return err('Not found', 404)
 
     const body = updateSchema.parse(await req.json())
-    const updated = await prisma.student.update({ where: { id: params.id }, data: body })
+    const updated = await prisma.student.update({ where: { id }, data: body })
 
     const { password: _password, ...safe } = updated
     return ok(safe)
