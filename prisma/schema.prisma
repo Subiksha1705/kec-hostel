@@ -4,16 +4,12 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 
-// ENUMS
+// ─── ENUMS ────────────────────────────────────────────────────────────────────
 
-
-enum Role {
-  ADMIN
-  STUDENT
-}
 
 enum LeaveStatus {
   PENDING
@@ -27,89 +23,181 @@ enum ComplaintStatus {
 }
 
 
-// CORE TABLES
+// ─── COLLEGE ──────────────────────────────────────────────────────────────────
 
 
 model College {
   id        String   @id @default(uuid())
   name      String
+  domain    String?
   location  String
   createdAt DateTime @default(now())
 
-  admins    Admin[]
-  students  Student[]
-  hostels   Hostel[]
-  gallery   Gallery[]
+  admins      Admin[]
+  members     AdminMember[]
+  students    Student[]
+  hostels     Hostel[]
+  classes     Class[]
+  roles       Role[]
+  gallery     Gallery[]
 }
 
 
-// ADMIN
+// ─── ADMIN (college owner) ────────────────────────────────────────────────────
 
 
 model Admin {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password   String
-  collegeId  String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  collegeId String
+  createdAt DateTime @default(now())
 
-  college    College  @relation(fields: [collegeId], references: [id])
+  college   College  @relation(fields: [collegeId], references: [id])
 }
 
 
-// STUDENT
+// ─── ROLES ────────────────────────────────────────────────────────────────────
 
 
-model Student {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password   String
-  roomNumber String?
-  collegeId  String
-  createdAt  DateTime @default(now())
+model Role {
+  id        String   @id @default(uuid())
+  name      String
+  collegeId String
+  createdAt DateTime @default(now())
 
-  college    College  @relation(fields: [collegeId], references: [id])
-
-  leaves     Leave[]
-  complaints Complaint[]
-  reviews    Review[]
+  college     College          @relation(fields: [collegeId], references: [id])
+  permissions RolePermission[]
+  members     AdminMember[]
 }
 
 
-// HOSTEL
+// ─── ROLE PERMISSIONS ─────────────────────────────────────────────────────────
+// One row per module per role.
+// module values: "students" | "leaves" | "complaints"
+
+
+model RolePermission {
+  id        String  @id @default(uuid())
+  roleId    String
+  module    String
+  canView   Boolean @default(false)
+  canCreate Boolean @default(false)
+  canEdit   Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module])
+}
+
+
+// ─── ADMIN MEMBERS (staff) ────────────────────────────────────────────────────
+// Staff created by Admin. Access controlled by Role.
+// classId / hostelId are optional scope restrictions.
+
+
+model AdminMember {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  roleId    String
+  collegeId String
+  classId   String?
+  hostelId  String?
+  createdAt DateTime @default(now())
+
+  role      Role     @relation(fields: [roleId], references: [id])
+  college   College  @relation(fields: [collegeId], references: [id])
+  class     Class?   @relation(fields: [classId], references: [id])
+  hostel    Hostel?  @relation(fields: [hostelId], references: [id])
+
+  assignedLeaves  Leave[] @relation("AssignedTo")
+  reviewedLeaves  Leave[] @relation("ReviewedBy")
+}
+
+
+// ─── CLASS ────────────────────────────────────────────────────────────────────
+
+
+model Class {
+  id        String   @id @default(uuid())
+  name      String
+  collegeId String
+  createdAt DateTime @default(now())
+
+  college   College       @relation(fields: [collegeId], references: [id])
+  students  Student[]
+  members   AdminMember[]
+}
+
+
+// ─── HOSTEL ───────────────────────────────────────────────────────────────────
 
 
 model Hostel {
-  id         String   @id @default(uuid())
-  name       String
-  location   String
-  capacity   Int
-  collegeId  String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  capacity  Int
+  collegeId String
+  createdAt DateTime @default(now())
 
-  college    College  @relation(fields: [collegeId], references: [id])
+  college   College       @relation(fields: [collegeId], references: [id])
+  students  Student[]
+  members   AdminMember[]
 }
 
 
-// LEAVE SYSTEM
+// ─── STUDENT ──────────────────────────────────────────────────────────────────
+
+
+model Student {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  password    String
+  rollNumber  String
+  collegeId   String
+  classId     String?
+  hostelId    String?
+  createdAt   DateTime @default(now())
+
+  college     College    @relation(fields: [collegeId], references: [id])
+  class       Class?     @relation(fields: [classId], references: [id])
+  hostel      Hostel?    @relation(fields: [hostelId], references: [id])
+
+  leaves      Leave[]
+  complaints  Complaint[]
+  reviews     Review[]
+}
+
+
+// ─── LEAVE ────────────────────────────────────────────────────────────────────
 
 
 model Leave {
-  id          String      @id @default(uuid())
-  studentId   String
-  reason      String
-  fromDate    DateTime
-  toDate      DateTime
-  status      LeaveStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
+  id           String      @id @default(uuid())
+  studentId    String
+  reason       String
+  fromDate     DateTime
+  toDate       DateTime
+  status       LeaveStatus @default(PENDING)
+  assignedToId String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  collegeId    String
+  createdAt    DateTime    @default(now())
 
-  student     Student     @relation(fields: [studentId], references: [id])
+  student      Student      @relation(fields: [studentId], references: [id])
+  assignedTo   AdminMember? @relation("AssignedTo", fields: [assignedToId], references: [id])
+  reviewedBy   AdminMember? @relation("ReviewedBy", fields: [reviewedById], references: [id])
 }
 
 
-// COMPLAINT SYSTEM
+// ─── COMPLAINT ────────────────────────────────────────────────────────────────
 
 
 model Complaint {
@@ -124,26 +212,29 @@ model Complaint {
 }
 
 
-// REVIEWS / FEEDBACK
+// ─── REVIEW ───────────────────────────────────────────────────────────────────
 
 
 model Review {
-  id          String   @id @default(uuid())
-  studentId   String
-  rating      Int      // 1–5
-  comment     String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  studentId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
 
-  student     Student  @relation(fields: [studentId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id])
 }
 
-// GALLERY (FOR GUEST PAGE)
-model Gallery {
-  id         String   @id @default(uuid())
-  imageUrl   String
-  caption    String?
-  collegeId  String
-  createdAt  DateTime @default(now())
 
-  college    College  @relation(fields: [collegeId], references: [id])
+// ─── GALLERY ──────────────────────────────────────────────────────────────────
+
+
+model Gallery {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  caption   String?
+  collegeId String
+  createdAt DateTime @default(now())
+
+  college   College  @relation(fields: [collegeId], references: [id])
 }
