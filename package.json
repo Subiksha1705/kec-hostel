@@ -7,13 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
+    "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
+    "create-college": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_college.ts",
+    "health:api": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/health_check.ts"
   },
   "dependencies": {
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "5",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
     "next": "16.1.6",
+    "prisma": "5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "zod": "^3.24.1"
@@ -22,14 +26,13 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.5",
-    "@types/node": "^20",
+    "@types/node": "^25.5.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "prisma": "^7.5.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }
