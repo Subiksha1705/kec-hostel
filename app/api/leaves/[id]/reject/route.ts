@@ -7,12 +7,16 @@ import { z } from 'zod'
 const schema = z.object({ reason: z.string().optional() })
 
 // PUT /api/leaves/:id/reject — only the assigned member (or admin) can reject
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     const body = schema.parse(await req.json())
 
-    const leave = await prisma.leave.findUnique({ where: { id: params.id } })
+    const leave = await prisma.leave.findUnique({ where: { id } })
     if (!leave || leave.collegeId !== session.collegeId) return err('Not found', 404)
     if (leave.status !== 'PENDING') return err('Leave is not in PENDING status', 409)
 
@@ -23,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (session.type === 'STUDENT') return err('Forbidden', 403)
 
     const updated = await prisma.leave.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: 'REJECTED',
         reviewedById: session.sub,

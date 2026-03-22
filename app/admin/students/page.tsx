@@ -1,0 +1,299 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { apiJson } from '@/lib/api/client'
+import Modal from '@/components/ui/Modal'
+import Table from '@/components/ui/Table'
+
+type Student = {
+  id: string
+  name: string
+  email: string
+  rollNumber: string
+  class?: { id: string; name: string } | null
+  hostel?: { id: string; name: string } | null
+}
+
+type Option = { id: string; name: string }
+
+type FormState = {
+  id?: string
+  name: string
+  email: string
+  password: string
+  rollNumber: string
+  classId: string
+  hostelId: string
+}
+
+const emptyForm: FormState = {
+  name: '',
+  email: '',
+  password: '',
+  rollNumber: '',
+  classId: '',
+  hostelId: '',
+}
+
+export default function StudentsPage() {
+  const [students, setStudents] = useState<Student[]>([])
+  const [classes, setClasses] = useState<Option[]>([])
+  const [hostels, setHostels] = useState<Option[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [form, setForm] = useState<FormState>(emptyForm)
+  const [error, setError] = useState('')
+
+  const load = async () => {
+    const [studentsRes, classesRes, hostelsRes] = await Promise.all([
+      apiJson<{ ok: boolean; data: Student[] }>('/api/students'),
+      apiJson<{ ok: boolean; data: Option[] }>('/api/classes'),
+      apiJson<{ ok: boolean; data: Option[] }>('/api/hostels'),
+    ])
+    if (studentsRes.data?.ok) setStudents(studentsRes.data.data)
+    if (classesRes.data?.ok) setClasses(classesRes.data.data)
+    if (hostelsRes.data?.ok) setHostels(hostelsRes.data.data)
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const openAdd = () => {
+    setForm(emptyForm)
+    setError('')
+    setIsOpen(true)
+  }
+
+  const openEdit = (student: Student) => {
+    setForm({
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      password: '',
+      rollNumber: student.rollNumber,
+      classId: student.class?.id ?? '',
+      hostelId: student.hostel?.id ?? '',
+    })
+    setError('')
+    setIsOpen(true)
+  }
+
+  const submit = async () => {
+    setError('')
+    if (!form.name.trim() || !form.rollNumber.trim()) {
+      setError('Name and roll number are required')
+      return
+    }
+    if (!form.id && !form.email.trim()) {
+      setError('Email is required')
+      return
+    }
+
+    if (!form.id && form.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
+    const payload: any = {
+      name: form.name.trim(),
+      rollNumber: form.rollNumber.trim(),
+      classId: form.classId || null,
+      hostelId: form.hostelId || null,
+    }
+
+    if (!form.id) {
+      payload.email = form.email.trim()
+      payload.password = form.password
+      const { res, data } = await apiJson<{ ok: boolean; error?: string }>('/api/students', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok || !data?.ok) {
+        setError(data?.error ?? 'Failed to add student')
+        return
+      }
+    } else {
+      const { res, data } = await apiJson<{ ok: boolean; error?: string }>(
+        `/api/students/${form.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        }
+      )
+      if (!res.ok || !data?.ok) {
+        setError(data?.error ?? 'Failed to update student')
+        return
+      }
+    }
+
+    setIsOpen(false)
+    setForm(emptyForm)
+    load()
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Students
+        </h1>
+        <button
+          onClick={openAdd}
+          style={{
+            background: 'var(--sage)',
+            color: 'white',
+            border: 'none',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius)',
+            cursor: 'pointer',
+            fontWeight: 600,
+          }}
+        >
+          Add Student
+        </button>
+      </div>
+
+      <Table
+        columns={[
+          { key: 'rollNumber', label: 'Roll No' },
+          { key: 'name', label: 'Name' },
+          { key: 'email', label: 'Email' },
+          { key: 'class', label: 'Class', render: (item: Student) => item.class?.name ?? '-' },
+          { key: 'hostel', label: 'Hostel', render: (item: Student) => item.hostel?.name ?? '-' },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (item: Student) => (
+              <button
+                onClick={() => openEdit(item)}
+                style={{
+                  background: 'var(--sage-light)',
+                  color: 'var(--sage-dark)',
+                  border: '1px solid var(--border)',
+                  padding: '6px 10px',
+                  borderRadius: 'var(--radius)',
+                  cursor: 'pointer',
+                }}
+              >
+                Edit
+              </button>
+            ),
+          },
+        ]}
+        data={students}
+        emptyMessage="No students added yet."
+      />
+
+      <Modal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title={form.id ? 'Edit Student' : 'Add Student'}
+      >
+        <div style={{ display: 'grid', gap: '12px' }}>
+          <input
+            placeholder="Name"
+            value={form.name}
+            onChange={(event) => setForm({ ...form, name: event.target.value })}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+            }}
+          />
+          <input
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
+            disabled={Boolean(form.id)}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+            }}
+          />
+          {!form.id ? (
+            <input
+              placeholder="Password"
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          ) : null}
+          <input
+            placeholder="Roll Number"
+            value={form.rollNumber}
+            onChange={(event) => setForm({ ...form, rollNumber: event.target.value })}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+            }}
+          />
+          <select
+            value={form.classId}
+            onChange={(event) => setForm({ ...form, classId: event.target.value })}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+            }}
+          >
+            <option value="">No restriction (class)</option>
+            {classes.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.hostelId}
+            onChange={(event) => setForm({ ...form, hostelId: event.target.value })}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+            }}
+          >
+            <option value="">No restriction (hostel)</option>
+            {hostels.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          {error ? (
+            <div style={{ background: 'var(--rose)', color: '#7a2020', padding: '8px 10px', borderRadius: 'var(--radius)' }}>
+              {error}
+            </div>
+          ) : null}
+          <button
+            onClick={submit}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            {form.id ? 'Save Changes' : 'Add Student'}
+          </button>
+        </div>
+      </Modal>
+    </div>
+  )
+}

@@ -4,13 +4,17 @@ import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 
 // DELETE /api/roles/:id — delete a role only if no members are assigned to it
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { _count: { select: { members: true } } },
     })
 
@@ -18,7 +22,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (role.collegeId !== session.collegeId) return err('Forbidden', 403)
     if (role._count.members > 0) return err('Cannot delete role with assigned members', 409)
 
-    await prisma.role.delete({ where: { id: params.id } })
+    await prisma.role.delete({ where: { id } })
 
     return ok({ deleted: true })
   } catch (e: unknown) {

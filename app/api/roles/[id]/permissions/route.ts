@@ -17,15 +17,19 @@ const permissionSchema = z.array(
 )
 
 // GET /api/roles/:id/permissions
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
-    const role = await prisma.role.findUnique({ where: { id: params.id } })
+    const role = await prisma.role.findUnique({ where: { id } })
     if (!role || role.collegeId !== session.collegeId) return err('Not found', 404)
 
-    const permissions = await prisma.rolePermission.findMany({ where: { roleId: params.id } })
+    const permissions = await prisma.rolePermission.findMany({ where: { roleId: id } })
     return ok(permissions)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'
@@ -35,24 +39,28 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PUT /api/roles/:id/permissions — replaces all permissions for the role
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
-    const role = await prisma.role.findUnique({ where: { id: params.id } })
+    const role = await prisma.role.findUnique({ where: { id } })
     if (!role || role.collegeId !== session.collegeId) return err('Not found', 404)
 
     const body = permissionSchema.parse(await req.json())
 
     await prisma.$transaction([
-      prisma.rolePermission.deleteMany({ where: { roleId: params.id } }),
+      prisma.rolePermission.deleteMany({ where: { roleId: id } }),
       prisma.rolePermission.createMany({
-        data: body.map((p) => ({ roleId: params.id, ...p })),
+        data: body.map((p) => ({ roleId: id, ...p })),
       }),
     ])
 
-    const updated = await prisma.rolePermission.findMany({ where: { roleId: params.id } })
+    const updated = await prisma.rolePermission.findMany({ where: { roleId: id } })
     return ok(updated)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'

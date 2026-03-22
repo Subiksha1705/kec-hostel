@@ -12,18 +12,22 @@ const updateSchema = z.object({
 })
 
 // PUT /api/members/:id
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
-    const member = await prisma.adminMember.findUnique({ where: { id: params.id } })
+    const member = await prisma.adminMember.findUnique({ where: { id } })
     if (!member || member.collegeId !== session.collegeId) return err('Not found', 404)
 
     const body = updateSchema.parse(await req.json())
 
     const updated = await prisma.adminMember.update({
-      where: { id: params.id },
+      where: { id },
       data: body,
     })
 
@@ -38,15 +42,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/members/:id
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
-    const member = await prisma.adminMember.findUnique({ where: { id: params.id } })
+    const member = await prisma.adminMember.findUnique({ where: { id } })
     if (!member || member.collegeId !== session.collegeId) return err('Not found', 404)
 
-    await prisma.adminMember.delete({ where: { id: params.id } })
+    await prisma.adminMember.delete({ where: { id } })
     return ok({ deleted: true })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'
