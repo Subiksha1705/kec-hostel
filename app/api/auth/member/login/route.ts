@@ -8,6 +8,7 @@ import { z } from 'zod'
 const schema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  collegeId: z.string().uuid(),
 })
 
 export async function POST(req: NextRequest) {
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest) {
 
     const member = await prisma.adminMember.findUnique({ where: { email: body.email } })
     if (!member) return err('Invalid credentials', 401)
+    if (member.collegeId !== body.collegeId) return err('Invalid credentials', 401)
 
     const valid = await verifyPassword(body.password, member.password)
     if (!valid) return err('Invalid credentials', 401)

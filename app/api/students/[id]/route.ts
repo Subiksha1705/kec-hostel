@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
+import { requirePermission } from '@/lib/rbac'
+import { assertScope } from '@/lib/scope'
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -19,10 +21,18 @@ export async function PUT(
   try {
     const { id } = await params
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type === 'STUDENT') return err('Forbidden', 403)
 
     const student = await prisma.student.findUnique({ where: { id } })
     if (!student || student.collegeId !== session.collegeId) return err('Not found', 404)
+
+    if (session.type === 'MEMBER') {
+      await requirePermission(session.roleId!, 'students', 'canEdit')
+      assertScope(
+        { classId: session.classId ?? null, hostelId: session.hostelId ?? null },
+        { classId: student.classId, hostelId: student.hostelId }
+      )
+    }
 
     const body = updateSchema.parse(await req.json())
     const updated = await prisma.student.update({ where: { id }, data: body })
@@ -32,6 +42,8 @@ export async function PUT(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'
     if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)
+    if (msg === 'FORBIDDEN') return err('Forbidden', 403)
+    if (msg === 'SCOPE_DENIED') return err('Forbidden', 403)
     if (e instanceof z.ZodError) return err('Invalid request body', 400)
     return err(msg, 500)
   }

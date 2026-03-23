@@ -8,8 +8,14 @@ export async function GET(req: NextRequest) {
     const session = getSession(req)
     if (session.type !== 'MEMBER') return err('Forbidden', 403)
 
+    const member = await prisma.adminMember.findUnique({
+      where: { id: session.sub },
+      select: { roleId: true, collegeId: true },
+    })
+    if (!member || member.collegeId !== session.collegeId) return err('Forbidden', 403)
+
     const permissions = await prisma.rolePermission.findMany({
-      where: { roleId: session.roleId! },
+      where: { roleId: member.roleId },
       orderBy: { module: 'asc' },
     })
 

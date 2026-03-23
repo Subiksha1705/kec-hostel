@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
 import { requirePermission } from '@/lib/rbac'
+import { assertScope } from '@/lib/scope'
 import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
 
@@ -31,6 +32,20 @@ export async function PUT(
     const member = await prisma.adminMember.findUnique({ where: { id: memberId } })
     if (!member || member.collegeId !== session.collegeId) return err('Invalid member', 400)
 
+    const leaveStudent = await prisma.student.findUnique({
+      where: { id: leave.studentId },
+      select: { classId: true, hostelId: true },
+    })
+
+    if (leaveStudent) {
+      if (member.classId || member.hostelId) {
+        assertScope(
+          { classId: member.classId, hostelId: member.hostelId },
+          { classId: leaveStudent.classId, hostelId: leaveStudent.hostelId }
+        )
+      }
+    }
+
     const updated = await prisma.leave.update({
       where: { id },
       data: { assignedToId: memberId },
@@ -41,6 +56,9 @@ export async function PUT(
     const msg = e instanceof Error ? e.message : 'Server error'
     if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)
     if (msg === 'FORBIDDEN') return err('Forbidden', 403)
+    if (msg === 'SCOPE_DENIED') {
+      return err('This member cannot be assigned to this leave (scope mismatch)', 403)
+    }
     if (e instanceof z.ZodError) return err('Invalid request body', 400)
     return err(msg, 500)
   }

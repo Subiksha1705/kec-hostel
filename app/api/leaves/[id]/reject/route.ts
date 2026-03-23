@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
+import { requirePermission } from '@/lib/rbac'
 
 const schema = z.object({ reason: z.string().optional() })
 
@@ -15,6 +16,10 @@ export async function PUT(
     const { id } = await params
     const session = getSession(req)
     const body = schema.parse(await req.json())
+
+    if (session.type === 'MEMBER') {
+      await requirePermission(session.roleId!, 'leaves', 'canEdit')
+    }
 
     const leave = await prisma.leave.findUnique({ where: { id } })
     if (!leave || leave.collegeId !== session.collegeId) return err('Not found', 404)
@@ -39,6 +44,7 @@ export async function PUT(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'
     if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)
+    if (msg === 'FORBIDDEN') return err('Forbidden', 403)
     return err(msg, 500)
   }
 }

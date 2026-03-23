@@ -1,47 +1,77 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiJson } from '@/lib/api/client'
 
-const roles = [
+type College = { id: string; name: string; location: string }
+type LoginType = 'ADMIN' | 'MEMBER' | 'STUDENT'
+
+const LOGIN_TYPES: { label: string; value: LoginType }[] = [
   { label: 'Admin', value: 'ADMIN' },
   { label: 'Staff', value: 'MEMBER' },
   { label: 'Student', value: 'STUDENT' },
-] as const
-
-type Role = (typeof roles)[number]['value']
+]
 
 export default function LoginPage() {
   const router = useRouter()
-  const [role, setRole] = useState<Role>('ADMIN')
+
+  // Step 1 — college selection
+  const [query, setQuery] = useState('')
+  const [colleges, setColleges] = useState<College[]>([])
+  const [selectedCollege, setSelectedCollege] = useState<College | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // Step 2 — login form
+  const [loginType, setLoginType] = useState<LoginType>('STUDENT')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
 
+  // Search colleges
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('registered') === '1') {
-      setSuccessMessage('College registered! Please log in.')
+    if (query.length < 3) {
+      setColleges([])
+      return
     }
-  }, [])
+    const timer = setTimeout(async () => {
+      const { data } = await apiJson<{ ok: boolean; data: College[] }>(
+        `/api/colleges/search?q=${encodeURIComponent(query)}`
+      )
+      if (data?.ok) setColleges(data.data)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  const selectCollege = (college: College) => {
+    setSelectedCollege(college)
+    setQuery(college.name)
+    setDropdownOpen(false)
+    setError('')
+    localStorage.setItem('collegeName', college.name)
+    localStorage.setItem('collegeId', college.id)
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
+    if (!selectedCollege) {
+      setError('Please select your institution first')
+      return
+    }
 
     const endpoint =
-      role === 'ADMIN'
+      loginType === 'ADMIN'
         ? '/api/auth/admin/login'
-        : role === 'MEMBER'
+        : loginType === 'MEMBER'
           ? '/api/auth/member/login'
           : '/api/auth/student/login'
 
     const { res, data } = await apiJson<{ ok: boolean; data?: any; error?: string }>(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, collegeId: selectedCollege.id }),
     })
 
     if (!res.ok || !data?.ok) {
@@ -51,13 +81,14 @@ export default function LoginPage() {
 
     localStorage.setItem('accessToken', data.data.accessToken)
     localStorage.setItem('refreshToken', data.data.refreshToken)
-    localStorage.setItem('userType', role)
-    localStorage.setItem('userName', email)
+    localStorage.setItem('userType', loginType)
+    localStorage.setItem('userName', data.data.name ?? email)
+    if (data.data.roleName) localStorage.setItem('userRoleName', data.data.roleName)
 
     router.replace(
-      role === 'ADMIN'
+      loginType === 'ADMIN'
         ? '/admin/dashboard'
-        : role === 'MEMBER'
+        : loginType === 'MEMBER'
           ? '/member/dashboard'
           : '/student/dashboard'
     )
@@ -75,60 +106,130 @@ export default function LoginPage() {
     >
       <div
         style={{
+          width: 'min(480px, 100%)',
           display: 'flex',
-          width: 'min(900px, 100%)',
-          background: 'var(--surface)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-md)',
-          overflow: 'hidden',
           flexDirection: 'column',
+          gap: '24px',
         }}
       >
+        {/* College selector */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            background: 'var(--surface)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border)',
+            padding: '24px',
           }}
         >
-          <div style={{ padding: '36px', background: 'var(--surface-2)' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
-                fontSize: '32px',
-                marginBottom: '8px',
-              }}
-            >
-              KEC Hostel
-            </div>
-            <div style={{ color: 'var(--text-secondary)' }}>Hostel & Leave Management</div>
+          <div
+            style={{
+              fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
+              fontSize: '22px',
+              marginBottom: '16px',
+            }}
+          >
+            Select your institution
           </div>
-          <div style={{ padding: '36px' }}>
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {successMessage ? (
-                <div
-                  style={{
-                    background: 'var(--mint)',
-                    color: '#1a5c3a',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    fontSize: '14px',
-                  }}
-                >
-                  {successMessage}
-                </div>
-              ) : null}
+          <div style={{ position: 'relative' }}>
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setDropdownOpen(true)
+                setSelectedCollege(null)
+              }}
+              onFocus={() => setDropdownOpen(true)}
+              placeholder="Type 3 or more characters..."
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: `1px solid ${selectedCollege ? 'var(--sage)' : 'var(--border)'}`,
+                background: 'var(--surface-2)',
+                boxSizing: 'border-box',
+              }}
+            />
+            {dropdownOpen && query.length >= 3 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  zIndex: 10,
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  marginTop: '4px',
+                }}
+              >
+                {colleges.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      color: 'var(--text-secondary)',
+                      fontSize: '14px',
+                    }}
+                  >
+                    No institutions found
+                  </div>
+                ) : (
+                  colleges.map((college) => (
+                    <div
+                      key={college.id}
+                      onClick={() => selectCollege(college)}
+                      style={{
+                        padding: '10px 14px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--border)',
+                        fontSize: '14px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <div style={{ fontWeight: 600 }}>{college.name}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                        {college.location}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          {query.length > 0 && query.length < 3 && (
+            <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Please enter 3 or more characters
+            </div>
+          )}
+        </div>
+
+        {/* Login form — only shown after college is selected */}
+        {selectedCollege && (
+          <div
+            style={{
+              background: 'var(--surface)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border)',
+              padding: '24px',
+            }}
+          >
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* User type tabs */}
               <div style={{ display: 'flex', gap: '8px' }}>
-                {roles.map((item) => {
-                  const active = item.value === role
+                {LOGIN_TYPES.map((item) => {
+                  const active = item.value === loginType
                   return (
                     <button
                       key={item.value}
                       type="button"
-                      onClick={() => setRole(item.value)}
+                      onClick={() => setLoginType(item.value)}
                       style={{
                         flex: 1,
-                        padding: '10px 12px',
+                        padding: '10px',
                         borderRadius: 'var(--radius)',
                         border: '1px solid var(--border)',
                         background: active ? 'var(--sage-light)' : 'var(--surface)',
@@ -142,12 +243,13 @@ export default function LoginPage() {
                   )
                 })}
               </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Email</label>
                 <input
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   style={{
                     padding: '10px 12px',
@@ -157,13 +259,14 @@ export default function LoginPage() {
                   }}
                 />
               </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Password</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     style={{
                       flex: 1,
@@ -175,7 +278,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
+                    onClick={() => setShowPassword((p) => !p)}
                     style={{
                       border: '1px solid var(--border)',
                       background: 'var(--surface)',
@@ -189,7 +292,8 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
-              {error ? (
+
+              {error && (
                 <div
                   style={{
                     background: 'var(--rose)',
@@ -201,14 +305,15 @@ export default function LoginPage() {
                 >
                   {error}
                 </div>
-              ) : null}
+              )}
+
               <button
                 type="submit"
                 style={{
                   background: 'var(--sage)',
                   color: 'white',
                   border: 'none',
-                  padding: '12px 14px',
+                  padding: '12px',
                   borderRadius: 'var(--radius)',
                   cursor: 'pointer',
                   fontWeight: 600,
@@ -216,7 +321,8 @@ export default function LoginPage() {
               >
                 Sign In
               </button>
-              {role === 'ADMIN' ? (
+
+              {loginType === 'ADMIN' && (
                 <button
                   type="button"
                   onClick={() => router.push('/register')}
@@ -232,10 +338,10 @@ export default function LoginPage() {
                 >
                   New college? Register here
                 </button>
-              ) : null}
+              )}
             </form>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
