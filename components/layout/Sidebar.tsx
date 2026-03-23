@@ -84,25 +84,69 @@ export default function Sidebar({ userType }: { userType: UserType }) {
     <aside
       style={{
         width: '220px',
+        minWidth: '220px',
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
         background: 'var(--surface)',
         borderRight: '1px solid var(--border)',
         padding: '24px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '18px',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
       <div
         style={{
-          fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
-          fontSize: '22px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
           marginBottom: '8px',
         }}
       >
-        KEC Hostel
+        <div
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '8px',
+            background: 'var(--brand)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '14px',
+            flexShrink: 0,
+          }}
+        >
+          N
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
+            fontSize: '18px',
+            fontWeight: 400,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.3px',
+          }}
+        >
+          Nyroverve
+        </div>
       </div>
 
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <nav
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          flex: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+        }}
+      >
         {navItems.map((item) => {
           const active = pathname.startsWith(item.href)
           return (
@@ -128,7 +172,7 @@ export default function Sidebar({ userType }: { userType: UserType }) {
         })}
       </nav>
 
-      <div style={{ marginTop: 'auto', position: 'relative' }}>
+      <div style={{ marginTop: 'auto', position: 'relative', flexShrink: 0 }}>
         <div
           onClick={() => setProfileOpen((p) => !p)}
           style={{
@@ -139,10 +183,29 @@ export default function Sidebar({ userType }: { userType: UserType }) {
             border: '1px solid var(--border)',
           }}
         >
-          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '13px' }}>
+          <div
+            style={{
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {userName}
           </div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{roleLabel}</div>
+          <div
+            style={{
+              color: 'var(--text-secondary)',
+              fontSize: '12px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {roleLabel}
+          </div>
         </div>
 
         {profileOpen && (
@@ -178,9 +241,12 @@ export default function Sidebar({ userType }: { userType: UserType }) {
               Reset Password
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 localStorage.clear()
-                window.location.href = '/login'
+                try {
+                  await apiJson('/api/auth/logout', { method: 'POST' })
+                } catch {}
+                window.location.href = '/login?message=Logged%20out'
               }}
               style={{
                 width: '100%',

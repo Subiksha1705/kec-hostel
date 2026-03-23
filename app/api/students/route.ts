@@ -12,8 +12,8 @@ const createSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   rollNumber: z.string().min(1),
-  classId: z.string().uuid().optional(),
-  hostelId: z.string().uuid().optional(),
+  classId: z.string().uuid().optional().nullable(),
+  hostelId: z.string().uuid().optional().nullable(),
 })
 
 // GET /api/students
@@ -57,7 +57,12 @@ export async function POST(req: NextRequest) {
     const session = getSession(req)
     if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
-    const body = createSchema.parse(await req.json())
+    const raw = await req.json()
+    const body = createSchema.parse({
+      ...raw,
+      classId: raw.classId || null,
+      hostelId: raw.hostelId || null,
+    })
 
     const existing = await prisma.student.findUnique({ where: { email: body.email } })
     if (existing) return err('Email already in use', 409)

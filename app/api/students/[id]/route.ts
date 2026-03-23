@@ -34,7 +34,12 @@ export async function PUT(
       )
     }
 
-    const body = updateSchema.parse(await req.json())
+    const raw = await req.json()
+    const body = updateSchema.parse({
+      ...raw,
+      classId: raw.classId || null,
+      hostelId: raw.hostelId || null,
+    })
     const updated = await prisma.student.update({ where: { id }, data: body })
 
     const { password: _password, ...safe } = updated

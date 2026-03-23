@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { apiJson } from '@/lib/api/client'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
+import Toast from '@/components/ui/Toast'
+import { useToast } from '@/lib/hooks/useToast'
 
 type Student = {
   id: string
@@ -42,6 +44,7 @@ export default function StudentsPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
+  const { toast, showToast, clearToast } = useToast()
 
   const load = async () => {
     const [studentsRes, classesRes, hostelsRes] = await Promise.all([
@@ -109,9 +112,10 @@ export default function StudentsPage() {
         body: JSON.stringify(payload),
       })
       if (!res.ok || !data?.ok) {
-        setError(data?.error ?? 'Failed to add student')
+        showToast(data?.error ?? 'Failed to add student', 'error')
         return
       }
+      showToast('Student added successfully', 'success')
     } else {
       const { res, data } = await apiJson<{ ok: boolean; error?: string }>(
         `/api/students/${form.id}`,
@@ -121,13 +125,27 @@ export default function StudentsPage() {
         }
       )
       if (!res.ok || !data?.ok) {
-        setError(data?.error ?? 'Failed to update student')
+        showToast(data?.error ?? 'Failed to update student', 'error')
         return
       }
+      showToast('Student updated', 'success')
     }
 
     setIsOpen(false)
     setForm(emptyForm)
+    load()
+  }
+
+  const remove = async (id: string) => {
+    if (!window.confirm('Delete this student? This cannot be undone.')) return
+    const { res, data } = await apiJson<{ ok: boolean; error?: string }>(`/api/students/${id}`, {
+      method: 'DELETE',
+    })
+    if (!res.ok || !data?.ok) {
+      showToast(data?.error ?? 'Failed to delete student', 'error')
+      return
+    }
+    showToast('Student deleted', 'info')
     load()
   }
 
@@ -164,19 +182,34 @@ export default function StudentsPage() {
             key: 'actions',
             label: 'Actions',
             render: (item: Student) => (
-              <button
-                onClick={() => openEdit(item)}
-                style={{
-                  background: 'var(--sage-light)',
-                  color: 'var(--sage-dark)',
-                  border: '1px solid var(--border)',
-                  padding: '6px 10px',
-                  borderRadius: 'var(--radius)',
-                  cursor: 'pointer',
-                }}
-              >
-                Edit
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={() => openEdit(item)}
+                  style={{
+                    background: 'var(--sage-light)',
+                    color: 'var(--sage-dark)',
+                    border: '1px solid var(--border)',
+                    padding: '6px 10px',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => remove(item.id)}
+                  style={{
+                    background: 'var(--rose)',
+                    color: '#7a2020',
+                    border: '1px solid var(--border)',
+                    padding: '6px 10px',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             ),
           },
         ]}
@@ -294,6 +327,7 @@ export default function StudentsPage() {
           </button>
         </div>
       </Modal>
+      {toast && <Toast message={toast.message} variant={toast.variant} onClose={clearToast} />}
     </div>
   )
 }

@@ -15,7 +15,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.parse(await req.json())
 
-    const member = await prisma.adminMember.findUnique({ where: { email: body.email } })
+    const member = await prisma.adminMember.findUnique({
+      where: { email: body.email },
+      include: { role: true },
+    })
     if (!member) return err('Invalid credentials', 401)
     if (member.collegeId !== body.collegeId) return err('Invalid credentials', 401)
 
@@ -33,7 +36,22 @@ export async function POST(req: NextRequest) {
     const accessToken = signAccessToken(payload)
     const refreshToken = signRefreshToken(payload)
 
-    return ok({ accessToken, refreshToken })
+    const res = ok({ accessToken, refreshToken, name: member.name, roleName: member.role?.name ?? null })
+    res.cookies.set('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 15,
+    })
+    res.cookies.set('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    })
+    return res
   } catch (e) {
     if (e instanceof z.ZodError) return err('Invalid request body', 400)
     return err('Server error', 500)

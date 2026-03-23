@@ -1,20 +1,20 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { apiJson } from '@/lib/api/client'
+import ErrorBanner from '@/components/ui/ErrorBanner'
+import LoadingOverlay from '@/components/ui/LoadingOverlay'
 
-type College = { id: string; name: string; location: string }
+type College = { id: string; name: string; location: string; domain?: string | null }
+type RoleOption = { id: string; name: string }
 type LoginType = 'ADMIN' | 'MEMBER' | 'STUDENT'
 
-const LOGIN_TYPES: { label: string; value: LoginType }[] = [
-  { label: 'Admin', value: 'ADMIN' },
-  { label: 'Staff', value: 'MEMBER' },
-  { label: 'Student', value: 'STUDENT' },
-]
+type LoginOption = { label: string; value: LoginType; roleId?: string }
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Step 1 — college selection
   const [query, setQuery] = useState('')
@@ -22,13 +22,17 @@ export default function LoginPage() {
   const [selectedCollege, setSelectedCollege] = useState<College | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const [roles, setRoles] = useState<RoleOption[]>([])
 
   // Step 2 — login form
   const [loginType, setLoginType] = useState<LoginType>('STUDENT')
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [banner, setBanner] = useState<string | null>(null)
 
   // Search colleges
   useEffect(() => {
@@ -45,13 +49,65 @@ export default function LoginPage() {
     return () => clearTimeout(timer)
   }, [query])
 
+  useEffect(() => {
+    const message = searchParams.get('error') ?? searchParams.get('message')
+    if (message) setBanner(message)
+  }, [searchParams])
+
+  useEffect(() => {
+    const storedId = localStorage.getItem('collegeId')
+    const storedName = localStorage.getItem('collegeName')
+    const storedDomain = localStorage.getItem('collegeDomain')
+    if (storedId && storedName) {
+      setSelectedCollege({ id: storedId, name: storedName, location: '', domain: storedDomain })
+      setQuery(storedName)
+      setDropdownOpen(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedCollege) {
+      setRoles([])
+      setSelectedRoleId(null)
+      return
+    }
+
+    let isMounted = true
+    apiJson<{ ok: boolean; data: RoleOption[]; error?: string }>(
+      `/api/roles/public?collegeId=${encodeURIComponent(selectedCollege.id)}`
+    )
+      .then(({ data }) => {
+        if (!isMounted || !data?.ok) return
+        setRoles(data.data)
+      })
+      .catch(() => {})
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedCollege])
+
+  const loginOptions = useMemo<LoginOption[]>(() => {
+    return [
+      { label: 'Admin', value: 'ADMIN' },
+      { label: 'Student', value: 'STUDENT' },
+      ...roles.map((role) => ({
+        label: role.name,
+        value: 'MEMBER' as const,
+        roleId: role.id,
+      })),
+    ]
+  }, [roles])
+
   const selectCollege = (college: College) => {
     setSelectedCollege(college)
     setQuery(college.name)
     setDropdownOpen(false)
     setError('')
+    setBanner(null)
     localStorage.setItem('collegeName', college.name)
     localStorage.setItem('collegeId', college.id)
+    localStorage.setItem('collegeDomain', college.domain ?? '')
   }
 
   const submit = async (event: React.FormEvent) => {
@@ -69,10 +125,12 @@ export default function LoginPage() {
           ? '/api/auth/member/login'
           : '/api/auth/student/login'
 
+    setLoading(true)
     const { res, data } = await apiJson<{ ok: boolean; data?: any; error?: string }>(endpoint, {
       method: 'POST',
       body: JSON.stringify({ email, password, collegeId: selectedCollege.id }),
     })
+    setLoading(false)
 
     if (!res.ok || !data?.ok) {
       setError(data?.error ?? 'Login failed')
@@ -104,14 +162,55 @@ export default function LoginPage() {
         padding: '24px',
       }}
     >
-      <div
-        style={{
-          width: 'min(480px, 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-        }}
-      >
+        <div
+          style={{
+            width: 'min(480px, 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+          }}
+        >
+          {banner && (
+            <ErrorBanner
+              message={banner}
+              variant="info"
+              onClose={() => setBanner(null)}
+            />
+          )}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+            gap: '10px',
+            marginBottom: '4px',
+          }}
+        >
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: 'var(--brand)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: 700,
+              fontSize: '18px',
+            }}
+          >
+            N
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
+              fontSize: '26px',
+            }}
+          >
+            Nyroverve
+          </div>
+        </div>
+
         {/* College selector */}
         <div
           style={{
@@ -137,7 +236,9 @@ export default function LoginPage() {
               onChange={(e) => {
                 setQuery(e.target.value)
                 setDropdownOpen(true)
-                setSelectedCollege(null)
+                if (selectedCollege && e.target.value !== selectedCollege.name) {
+                  setSelectedCollege(null)
+                }
               }}
               onFocus={() => setDropdownOpen(true)}
               placeholder="Type 3 or more characters..."
@@ -150,6 +251,30 @@ export default function LoginPage() {
                 boxSizing: 'border-box',
               }}
             />
+            {selectedCollege && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCollege(null)
+                  setQuery('')
+                  setColleges([])
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  fontSize: '16px',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            )}
             {dropdownOpen && query.length >= 3 && (
               <div
                 style={{
@@ -219,16 +344,22 @@ export default function LoginPage() {
           >
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {/* User type tabs */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {LOGIN_TYPES.map((item) => {
-                  const active = item.value === loginType
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {loginOptions.map((item) => {
+                  const active =
+                    item.value === 'MEMBER'
+                      ? loginType === 'MEMBER' && selectedRoleId === item.roleId
+                      : loginType === item.value
                   return (
                     <button
-                      key={item.value}
+                      key={item.roleId ?? item.value}
                       type="button"
-                      onClick={() => setLoginType(item.value)}
+                      onClick={() => {
+                        setLoginType(item.value)
+                        setSelectedRoleId(item.roleId ?? null)
+                      }}
                       style={{
-                        flex: 1,
+                        flex: item.value === 'MEMBER' ? '0 0 auto' : 1,
                         padding: '10px',
                         borderRadius: 'var(--radius)',
                         border: '1px solid var(--border)',
@@ -294,17 +425,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div
-                  style={{
-                    background: 'var(--rose)',
-                    color: '#7a2020',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    fontSize: '14px',
-                  }}
-                >
-                  {error}
-                </div>
+                <ErrorBanner message={error} variant="error" onClose={() => setError('')} />
               )}
 
               <button
@@ -343,6 +464,7 @@ export default function LoginPage() {
           </div>
         )}
       </div>
+      <LoadingOverlay visible={loading} label="Signing in..." />
     </div>
   )
 }

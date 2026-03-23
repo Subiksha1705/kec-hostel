@@ -26,7 +26,22 @@ export async function POST(req: NextRequest) {
     const accessToken = signAccessToken(payload)
     const refreshToken = signRefreshToken(payload)
 
-    return ok({ accessToken, refreshToken })
+    const res = ok({ accessToken, refreshToken, name: student.name })
+    res.cookies.set('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 15,
+    })
+    res.cookies.set('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    })
+    return res
   } catch (e) {
     if (e instanceof z.ZodError) return err('Invalid request body', 400)
     return err('Server error', 500)

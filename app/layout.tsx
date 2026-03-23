@@ -15,7 +15,7 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "KEC Hostel",
+  title: "Nyroverve",
   description: "Hostel & Leave Management",
 };
 

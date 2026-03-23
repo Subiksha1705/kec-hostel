@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const colleges = await prisma.college.findMany({
       where: { name: { contains: q, mode: 'insensitive' } },
-      select: { id: true, name: true, location: true },
+      select: { id: true, name: true, location: true, domain: true },
       take: 10,
       orderBy: { name: 'asc' },
     })

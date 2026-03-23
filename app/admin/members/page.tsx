@@ -5,6 +5,8 @@ import * as XLSX from 'xlsx'
 import { apiJson } from '@/lib/api/client'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
+import Toast from '@/components/ui/Toast'
+import { useToast } from '@/lib/hooks/useToast'
 
 type Role = { id: string; name: string }
 
@@ -51,6 +53,8 @@ export default function MembersPage() {
   const [bulkResults, setBulkResults] = useState<null | { created: number; skipped: number; results: any[] }>(null)
   const [bulkError, setBulkError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast, showToast, clearToast } = useToast()
+  const collegeDomain = typeof window !== 'undefined' ? localStorage.getItem('collegeDomain') : null
 
   const load = async () => {
     const [membersRes, rolesRes, classesRes, hostelsRes] = await Promise.all([
@@ -121,6 +125,22 @@ export default function MembersPage() {
     }
 
     if (!form.id) {
+      if (collegeDomain) {
+        const emailDomain = form.email.trim().split('@')[1] ?? ''
+        if (emailDomain && emailDomain !== collegeDomain) {
+          showToast(
+            `Warning: Email domain @${emailDomain} doesn't match college domain @${collegeDomain}. Continue?`,
+            'info'
+          )
+          if (
+            !window.confirm(
+              `Email domain @${emailDomain} doesn't match your college domain @${collegeDomain}. Add anyway?`
+            )
+          ) {
+            return
+          }
+        }
+      }
       payload.email = form.email.trim()
       payload.password = form.password
       const { res, data } = await apiJson<{ ok: boolean; error?: string }>('/api/members', {
@@ -128,9 +148,10 @@ export default function MembersPage() {
         body: JSON.stringify(payload),
       })
       if (!res.ok || !data?.ok) {
-        setError(data?.error ?? 'Failed to add member')
+        showToast(data?.error ?? 'Failed to add member', 'error')
         return
       }
+      showToast('Member added', 'success')
     } else {
       const { res, data } = await apiJson<{ ok: boolean; error?: string }>(
         `/api/members/${form.id}`,
@@ -140,9 +161,10 @@ export default function MembersPage() {
         }
       )
       if (!res.ok || !data?.ok) {
-        setError(data?.error ?? 'Failed to update member')
+        showToast(data?.error ?? 'Failed to update member', 'error')
         return
       }
+      showToast('Member updated', 'success')
     }
 
     setIsOpen(false)
@@ -151,7 +173,15 @@ export default function MembersPage() {
   }
 
   const remove = async (id: string) => {
-    await apiJson(`/api/members/${id}`, { method: 'DELETE' })
+    if (!window.confirm('Remove this member? This cannot be undone.')) return
+    const { res, data } = await apiJson<{ ok: boolean; error?: string }>(`/api/members/${id}`, {
+      method: 'DELETE',
+    })
+    if (!res.ok || !data?.ok) {
+      showToast(data?.error ?? 'Failed to remove member', 'error')
+      return
+    }
+    showToast('Member removed', 'info')
     load()
   }
 
@@ -206,11 +236,16 @@ export default function MembersPage() {
     )
 
     if (!res.ok || !data?.ok) {
-      setBulkError(data?.error ?? 'Upload failed')
+      const message = data?.error ?? 'Upload failed'
+      setBulkError(message)
+      showToast(message, 'error')
       return
     }
 
     setBulkResults(data.data ?? null)
+    if (data.data) {
+      showToast(`${data.data.created} members created, ${data.data.skipped} skipped`, 'success')
+    }
     load()
   }
 
@@ -533,6 +568,7 @@ export default function MembersPage() {
           )}
         </div>
       </Modal>
+      {toast && <Toast message={toast.message} variant={toast.variant} onClose={clearToast} />}
     </div>
   )
 }
