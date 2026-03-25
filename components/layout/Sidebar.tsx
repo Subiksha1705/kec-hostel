@@ -14,7 +14,7 @@ type Permission = {
   canView: boolean
 }
 
-export default function Sidebar({ userType }: { userType: UserType }) {
+export default function Sidebar({ userType, width }: { userType: UserType; width?: number }) {
   const pathname = usePathname()
   const [userName, setUserName] = useState('User')
   const [roleLabel, setRoleLabel] = useState('User')
@@ -114,8 +114,8 @@ export default function Sidebar({ userType }: { userType: UserType }) {
   return (
     <aside
       style={{
-        width: '220px',
-        minWidth: '220px',
+        width: `${width ?? 220}px`,
+        minWidth: `${width ?? 220}px`,
         height: '100vh',
         position: 'sticky',
         top: 0,
