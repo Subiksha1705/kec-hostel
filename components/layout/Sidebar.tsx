@@ -24,6 +24,7 @@ export default function Sidebar({ userType }: { userType: UserType }) {
   })
   const [profileOpen, setProfileOpen] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+  const [showLogoutMenu, setShowLogoutMenu] = useState(false)
   const [resetForm, setResetForm] = useState({ current: '', next: '', confirm: '' })
   const [resetError, setResetError] = useState('')
   const [resetSuccess, setResetSuccess] = useState(false)
@@ -90,6 +91,23 @@ export default function Sidebar({ userType }: { userType: UserType }) {
       { href: '/student/hostel-info', label: 'Hostel Info', icon: <Building size={18} /> },
     ]
   }, [permissions.complaints, permissions.leaves, permissions.students, userType])
+
+  const handleLogout = async (mode: 'entirely' | 'account') => {
+    setShowLogoutMenu(false)
+    const accountLabel = userName && userName !== 'User' ? userName : 'this account'
+    if (mode === 'entirely') {
+      localStorage.clear()
+    } else {
+      ;['accessToken', 'refreshToken', 'userType', 'userName', 'userRoleName'].forEach((key) =>
+        localStorage.removeItem(key)
+      )
+    }
+    try {
+      await apiJson('/api/auth/logout', { method: 'POST' })
+    } catch {}
+    const message = mode === 'entirely' ? 'Logged out entirely' : `Logged out of ${accountLabel}`
+    window.location.href = `/login?message=${encodeURIComponent(message)}`
+  }
 
   return (
     <aside
@@ -185,7 +203,10 @@ export default function Sidebar({ userType }: { userType: UserType }) {
 
       <div style={{ marginTop: 'auto', position: 'relative', flexShrink: 0 }}>
         <div
-          onClick={() => setProfileOpen((p) => !p)}
+          onClick={() => {
+            setShowLogoutMenu(false)
+            setProfileOpen((p) => !p)
+          }}
           style={{
             background: 'var(--surface-2)',
             borderRadius: 'var(--radius)',
@@ -252,12 +273,8 @@ export default function Sidebar({ userType }: { userType: UserType }) {
               Reset Password
             </button>
             <button
-              onClick={async () => {
-                localStorage.clear()
-                try {
-                  await apiJson('/api/auth/logout', { method: 'POST' })
-                } catch {}
-                window.location.href = '/login?message=Logged%20out'
+              onClick={() => {
+                setShowLogoutMenu((open) => !open)
               }}
               style={{
                 width: '100%',
@@ -268,10 +285,55 @@ export default function Sidebar({ userType }: { userType: UserType }) {
                 cursor: 'pointer',
                 fontSize: '14px',
                 color: '#b91c1c',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              Logout
+              <span>Logout</span>
+              <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>›</span>
             </button>
+            {showLogoutMenu && (
+              <div
+                style={{
+                  borderTop: '1px solid var(--border)',
+                  background: 'var(--surface-2)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <button
+                  onClick={() => handleLogout('account')}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 14px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  This account{userName && userName !== 'User' ? ` (${userName})` : ''}
+                </button>
+                <button
+                  onClick={() => handleLogout('entirely')}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 14px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    color: '#b91c1c',
+                  }}
+                >
+                  Entirely
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -281,11 +343,13 @@ export default function Sidebar({ userType }: { userType: UserType }) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.4)',
+            background: 'rgba(0,0,0,0.9)',
+            backdropFilter: 'blur(8px) saturate(0.5)',
+            WebkitBackdropFilter: 'blur(8px) saturate(0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 100,
+            zIndex: 1000,
           }}
         >
           <div
@@ -421,6 +485,7 @@ export default function Sidebar({ userType }: { userType: UserType }) {
           </div>
         </div>
       )}
+
     </aside>
   )
 }
