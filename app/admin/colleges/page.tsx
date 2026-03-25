@@ -26,8 +26,8 @@ const emptyCollege: CollegeForm = { name: '', location: '', domain: '' }
 const emptyAdmin: AdminForm = { name: '', email: '', password: '', collegeId: '' }
 
 export default function AdminCollegesPage() {
-  const { data: colleges = [], loading, refresh, fetchedAt } =
-    useCachedFetch<College[]>('/api/superadmin/colleges')
+  const { data, loading, refresh, fetchedAt } = useCachedFetch<College[]>('/api/superadmin/colleges')
+  const colleges = data ?? []
   const [isOpen, setIsOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [form, setForm] = useState<CollegeForm>(emptyCollege)

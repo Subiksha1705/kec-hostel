@@ -16,7 +16,8 @@ type Leave = {
 }
 
 export default function StudentDashboardPage() {
-  const { data: leaves = [], loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
+  const { data, loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
+  const leaves = data ?? []
 
   const total = leaves.length
   const approved = leaves.filter((leave) => leave.status === 'APPROVED').length
