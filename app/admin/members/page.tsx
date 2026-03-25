@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import Toast from '@/components/ui/Toast'
 import { useToast } from '@/lib/hooks/useToast'
+import Select from '@/components/ui/Select'
 
 type Role = { id: string; name: string }
 
@@ -426,63 +427,36 @@ export default function MembersPage() {
               ) : null}
               <label style={fieldRowStyle}>
                 <span style={fieldLabelStyle}>Role</span>
-                <select
+                <Select
                   value={form.roleId}
-                  onChange={(event) => setForm({ ...form, roleId: event.target.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface-2)',
-                  }}
-                >
-                  <option value="">Select role</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setForm({ ...form, roleId: value })}
+                  options={[
+                    { value: '', label: 'Select role' },
+                    ...roles.map((role) => ({ value: role.id, label: role.name })),
+                  ]}
+                />
               </label>
               <label style={fieldRowStyle}>
                 <span style={fieldLabelStyle}>Class</span>
-                <select
+                <Select
                   value={form.classId}
-                  onChange={(event) => setForm({ ...form, classId: event.target.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface-2)',
-                  }}
-                >
-                  <option value="">No restriction (class)</option>
-                  {classes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setForm({ ...form, classId: value })}
+                  options={[
+                    { value: '', label: 'No restriction (class)' },
+                    ...classes.map((item) => ({ value: item.id, label: item.name })),
+                  ]}
+                />
               </label>
               <label style={fieldRowStyle}>
                 <span style={fieldLabelStyle}>Hostel</span>
-                <select
+                <Select
                   value={form.hostelId}
-                  onChange={(event) => setForm({ ...form, hostelId: event.target.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface-2)',
-                  }}
-                >
-                  <option value="">No restriction (hostel)</option>
-                  {hostels.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setForm({ ...form, hostelId: value })}
+                  options={[
+                    { value: '', label: 'No restriction (hostel)' },
+                    ...hostels.map((item) => ({ value: item.id, label: item.name })),
+                  ]}
+                />
               </label>
               {error ? (
                 <div

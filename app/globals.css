@@ -75,10 +75,84 @@ select option:checked {
   color: var(--brand-dark);
 }
 
+.select {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.select-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.select-value.is-placeholder {
+  color: var(--text-secondary);
+}
+
+.select-caret {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 40;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.select-option {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.select-option:hover,
+.select-option.is-selected {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+
+.select-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .phone-input {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.phone-input .select {
+  flex: 0 0 130px;
 }
 
 .phone-input .PhoneInputCountrySelect {
@@ -95,4 +169,25 @@ select option:checked {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-2);
+}
+
+.phone-country-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-country-option .PhoneInputCountryIcon {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.phone-flag-fallback {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--border);
+  display: inline-block;
 }

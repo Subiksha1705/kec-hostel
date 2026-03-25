@@ -7,6 +7,7 @@ import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
+import Select from '@/components/ui/Select'
 
 type Leave = {
   id: string
@@ -193,23 +194,14 @@ export default function AdminLeavesPage() {
         title="Assign Leave"
       >
         <div style={{ display: 'grid', gap: '12px' }}>
-          <select
+          <Select
             value={memberId}
-            onChange={(event) => setMemberId(event.target.value)}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-            }}
-          >
-            <option value="">Assign to member</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setMemberId(value)}
+            options={[
+              { value: '', label: 'Assign to member' },
+              ...members.map((member) => ({ value: member.id, label: member.name })),
+            ]}
+          />
           <button
             onClick={assign}
             style={{

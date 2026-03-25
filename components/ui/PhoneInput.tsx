@@ -2,6 +2,8 @@
 
 import PhoneInputBase from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
+import Select from '@/components/ui/Select'
+import * as Flags from 'country-flag-icons/react/3x2'
 
 type PhoneInputProps = {
   value: string
@@ -29,6 +31,27 @@ export default function PhoneInput({
         placeholder={placeholder ?? 'Phone number'}
         disabled={disabled}
         className="phone-input"
+        countrySelectComponent={({ options, value: country, onChange: onCountryChange, disabled: countryDisabled }) => (
+          <Select
+            value={country ?? ''}
+            onChange={(next) => onCountryChange(next || undefined)}
+            disabled={countryDisabled}
+            options={options.map((option: { value?: string; label: string }) => ({
+              value: option.value ?? '',
+              label: (
+                <span className="phone-country-option">
+                  {(() => {
+                    const CodeFlag = (Flags as Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>>)[
+                      option.value ?? ''
+                    ]
+                    return CodeFlag ? <CodeFlag /> : <span className="phone-flag-fallback" />
+                  })()}
+                  <span>{option.label}</span>
+                </span>
+              ),
+            }))}
+          />
+        )}
       />
     </div>
   )
