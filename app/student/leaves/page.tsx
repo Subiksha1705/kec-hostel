@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -18,22 +20,13 @@ type Leave = {
 }
 
 export default function StudentLeavesPage() {
-  const [leaves, setLeaves] = useState<Leave[]>([])
+  const { data: leaves = [], loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
   const [isOpen, setIsOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  const load = async () => {
-    const { data } = await apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves')
-    if (data?.ok) setLeaves(data.data)
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const submit = async () => {
     if (submitting) return
@@ -69,7 +62,8 @@ export default function StudentLeavesPage() {
     setReason('')
     setFromDate('')
     setToDate('')
-    load()
+    cache.invalidate('/api/leaves')
+    refresh()
   }
 
   return (
@@ -78,23 +72,27 @@ export default function StudentLeavesPage() {
         <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           My Leaves
         </h1>
-        <button
-          onClick={() => setIsOpen(true)}
-          style={{
-            background: 'var(--sage)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          Apply for Leave
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+          <button
+            onClick={() => setIsOpen(true)}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Apply for Leave
+          </button>
+        </div>
       </div>
 
       <Table
+        loading={loading}
         columns={[
           { key: 'reason', label: 'Reason' },
           { key: 'fromDate', label: 'From', render: (item: Leave) => new Date(item.fromDate).toLocaleDateString() },

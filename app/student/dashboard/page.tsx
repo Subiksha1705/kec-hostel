@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { CalendarCheck, CheckCircle2, Clock } from 'lucide-react'
-import { apiJson } from '@/lib/api/client'
+import { useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import StatCard from '@/components/ui/StatCard'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -16,13 +16,7 @@ type Leave = {
 }
 
 export default function StudentDashboardPage() {
-  const [leaves, setLeaves] = useState<Leave[]>([])
-
-  useEffect(() => {
-    apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves').then(({ data }) => {
-      if (data?.ok) setLeaves(data.data)
-    })
-  }, [])
+  const { data: leaves = [], loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
 
   const total = leaves.length
   const approved = leaves.filter((leave) => leave.status === 'APPROVED').length
@@ -36,7 +30,15 @@ export default function StudentDashboardPage() {
         <StatCard label="Pending" value={pending} icon={<Clock size={20} />} />
       </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Recent Leaves
+        </h2>
+        <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+      </div>
+
       <Table
+        loading={loading}
         columns={[
           { key: 'reason', label: 'Reason' },
           { key: 'fromDate', label: 'From', render: (item: Leave) => new Date(item.fromDate).toLocaleDateString() },

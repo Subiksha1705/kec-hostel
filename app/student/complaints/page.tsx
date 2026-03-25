@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -15,24 +17,13 @@ type Complaint = {
 }
 
 export default function StudentComplaintsPage() {
-  const [complaints, setComplaints] = useState<Complaint[]>([])
+  const { data: complaints = [], loading, refresh, fetchedAt } =
+    useCachedFetch<Complaint[]>('/api/complaints')
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-
-  const load = async () => {
-    setLoading(true)
-    const { data } = await apiJson<{ ok: boolean; data: Complaint[] }>('/api/complaints')
-    if (data?.ok) setComplaints(data.data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const submit = async () => {
     if (submitting) return
@@ -54,7 +45,8 @@ export default function StudentComplaintsPage() {
     setTitle('')
     setDescription('')
     setIsOpen(false)
-    load()
+    cache.invalidate('/api/complaints')
+    refresh()
   }
 
   return (
@@ -63,20 +55,23 @@ export default function StudentComplaintsPage() {
         <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           My Complaints
         </h1>
-        <button
-          onClick={() => setIsOpen(true)}
-          style={{
-            background: 'var(--sage)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          Register Complaint
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+          <button
+            onClick={() => setIsOpen(true)}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Register Complaint
+          </button>
+        </div>
       </div>
 
       <Table

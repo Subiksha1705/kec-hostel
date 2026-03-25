@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import Toast from '@/components/ui/Toast'
@@ -38,31 +40,20 @@ const emptyForm: FormState = {
 }
 
 export default function StudentsPage() {
-  const [students, setStudents] = useState<Student[]>([])
-  const [classes, setClasses] = useState<Option[]>([])
-  const [hostels, setHostels] = useState<Option[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: students = [], loading: studentsLoading, refresh: refreshStudents, fetchedAt } =
+    useCachedFetch<Student[]>('/api/students')
+  const { data: classes = [], loading: classesLoading, refresh: refreshClasses } =
+    useCachedFetch<Option[]>('/api/classes')
+  const { data: hostels = [], loading: hostelsLoading, refresh: refreshHostels } =
+    useCachedFetch<Option[]>('/api/hostels')
+  const loading = studentsLoading || classesLoading || hostelsLoading
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
   const { toast, showToast, clearToast } = useToast()
-
-  const load = async () => {
-    setLoading(true)
-    const [studentsRes, classesRes, hostelsRes] = await Promise.all([
-      apiJson<{ ok: boolean; data: Student[] }>('/api/students'),
-      apiJson<{ ok: boolean; data: Option[] }>('/api/classes'),
-      apiJson<{ ok: boolean; data: Option[] }>('/api/hostels'),
-    ])
-    if (studentsRes.data?.ok) setStudents(studentsRes.data.data)
-    if (classesRes.data?.ok) setClasses(classesRes.data.data)
-    if (hostelsRes.data?.ok) setHostels(hostelsRes.data.data)
-    setLoading(false)
+  const handleRefresh = async () => {
+    await Promise.all([refreshStudents(), refreshClasses(), refreshHostels()])
   }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const openAdd = () => {
     setForm(emptyForm)
@@ -136,7 +127,8 @@ export default function StudentsPage() {
 
     setIsOpen(false)
     setForm(emptyForm)
-    load()
+    cache.invalidate('/api/students')
+    refreshStudents()
   }
 
   const remove = async (id: string) => {
@@ -149,7 +141,8 @@ export default function StudentsPage() {
       return
     }
     showToast('Student deleted', 'info')
-    load()
+    cache.invalidate('/api/students')
+    refreshStudents()
   }
 
   return (
@@ -158,20 +151,23 @@ export default function StudentsPage() {
         <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           Students
         </h1>
-        <button
-          onClick={openAdd}
-          style={{
-            background: 'var(--sage)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          Add Student
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <RefreshButton onRefresh={handleRefresh} fetchedAt={fetchedAt} />
+          <button
+            onClick={openAdd}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Add Student
+          </button>
+        </div>
       </div>
 
       <Table

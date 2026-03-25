@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import Toast from '@/components/ui/Toast'
@@ -41,11 +43,15 @@ const emptyForm: FormState = {
 }
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [roles, setRoles] = useState<Role[]>([])
-  const [classes, setClasses] = useState<Option[]>([])
-  const [hostels, setHostels] = useState<Option[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: members = [], loading: membersLoading, refresh: refreshMembers, fetchedAt } =
+    useCachedFetch<Member[]>('/api/members')
+  const { data: roles = [], loading: rolesLoading, refresh: refreshRoles } =
+    useCachedFetch<Role[]>('/api/roles')
+  const { data: classes = [], loading: classesLoading, refresh: refreshClasses } =
+    useCachedFetch<Option[]>('/api/classes')
+  const { data: hostels = [], loading: hostelsLoading, refresh: refreshHostels } =
+    useCachedFetch<Option[]>('/api/hostels')
+  const loading = membersLoading || rolesLoading || classesLoading || hostelsLoading
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
@@ -57,24 +63,9 @@ export default function MembersPage() {
   const { toast, showToast, clearToast } = useToast()
   const collegeDomain = typeof window !== 'undefined' ? localStorage.getItem('collegeDomain') : null
 
-  const load = async () => {
-    setLoading(true)
-    const [membersRes, rolesRes, classesRes, hostelsRes] = await Promise.all([
-      apiJson<{ ok: boolean; data: Member[] }>('/api/members'),
-      apiJson<{ ok: boolean; data: Role[] }>('/api/roles'),
-      apiJson<{ ok: boolean; data: Option[] }>('/api/classes'),
-      apiJson<{ ok: boolean; data: Option[] }>('/api/hostels'),
-    ])
-    if (membersRes.data?.ok) setMembers(membersRes.data.data)
-    if (rolesRes.data?.ok) setRoles(rolesRes.data.data)
-    if (classesRes.data?.ok) setClasses(classesRes.data.data)
-    if (hostelsRes.data?.ok) setHostels(hostelsRes.data.data)
-    setLoading(false)
+  const handleRefresh = async () => {
+    await Promise.all([refreshMembers(), refreshRoles(), refreshClasses(), refreshHostels()])
   }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const openAdd = () => {
     setForm(emptyForm)
@@ -172,7 +163,8 @@ export default function MembersPage() {
 
     setIsOpen(false)
     setForm(emptyForm)
-    load()
+    cache.invalidate('/api/members')
+    refreshMembers()
   }
 
   const remove = async (id: string) => {
@@ -185,7 +177,8 @@ export default function MembersPage() {
       return
     }
     showToast('Member removed', 'info')
-    load()
+    cache.invalidate('/api/members')
+    refreshMembers()
   }
 
   const parseBulkFile = async (file: File): Promise<any[]> => {
@@ -249,7 +242,8 @@ export default function MembersPage() {
     if (data.data) {
       showToast(`${data.data.created} members created, ${data.data.skipped} skipped`, 'success')
     }
-    load()
+    cache.invalidate('/api/members')
+    refreshMembers()
   }
 
   return (
@@ -258,20 +252,23 @@ export default function MembersPage() {
         <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           Members
         </h1>
-        <button
-          onClick={openAdd}
-          style={{
-            background: 'var(--sage)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          Add Member
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <RefreshButton onRefresh={handleRefresh} fetchedAt={fetchedAt} />
+          <button
+            onClick={openAdd}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Add Member
+          </button>
+        </div>
       </div>
 
       <Table

@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
 
@@ -19,20 +21,9 @@ const filters = ['ALL', 'PENDING', 'RESOLVED'] as const
 type Filter = (typeof filters)[number]
 
 export default function AdminComplaintsPage() {
-  const [complaints, setComplaints] = useState<Complaint[]>([])
   const [filter, setFilter] = useState<Filter>('ALL')
-  const [loading, setLoading] = useState(true)
-
-  const load = async () => {
-    setLoading(true)
-    const { data } = await apiJson<{ ok: boolean; data: Complaint[] }>('/api/complaints')
-    if (data?.ok) setComplaints(data.data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
+  const { data: complaints = [], loading, refresh, fetchedAt } =
+    useCachedFetch<Complaint[]>('/api/complaints')
 
   const filteredComplaints = useMemo(() => {
     if (filter === 'ALL') return complaints
@@ -44,14 +35,18 @@ export default function AdminComplaintsPage() {
       method: 'PUT',
       body: JSON.stringify({ status: 'RESOLVED' }),
     })
-    load()
+    cache.invalidate('/api/complaints')
+    refresh()
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        Complaints
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Complaints
+        </h1>
+        <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         {filters.map((item) => {

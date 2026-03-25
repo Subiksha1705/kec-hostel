@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 
 type Role = {
@@ -34,23 +36,11 @@ const emptyPermissions: Permission[] = modules.map((module) => ({
 
 export default function RolesPage() {
   const router = useRouter()
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: roles = [], loading, refresh, fetchedAt } = useCachedFetch<Role[]>('/api/roles')
   const [isOpen, setIsOpen] = useState(false)
   const [newRoleName, setNewRoleName] = useState('')
   const [error, setError] = useState('')
   const [newPermissions, setNewPermissions] = useState<Permission[]>(emptyPermissions)
-
-  const load = async () => {
-    setLoading(true)
-    const { data } = await apiJson<{ ok: boolean; data: Role[] }>('/api/roles')
-    if (data?.ok) setRoles(data.data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const createRole = async () => {
     setError('')
@@ -85,7 +75,8 @@ export default function RolesPage() {
     setNewRoleName('')
     setNewPermissions(emptyPermissions)
     setIsOpen(false)
-    load()
+    cache.invalidate('/api/roles')
+    refresh()
   }
 
   const updatePermission = (module: Permission['module'], key: keyof Permission, value: boolean) => {
@@ -156,7 +147,8 @@ export default function RolesPage() {
 
   const deleteRole = async (roleId: string) => {
     await apiJson(`/api/roles/${roleId}`, { method: 'DELETE' })
-    load()
+    cache.invalidate('/api/roles')
+    refresh()
   }
 
   return (
@@ -165,25 +157,28 @@ export default function RolesPage() {
         <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           Roles
         </h1>
-        <button
-          onClick={() => {
-            setNewRoleName('')
-            setNewPermissions(emptyPermissions)
-            setError('')
-            setIsOpen(true)
-          }}
-          style={{
-            background: 'var(--sage)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          New Role
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+          <button
+            onClick={() => {
+              setNewRoleName('')
+              setNewPermissions(emptyPermissions)
+              setError('')
+              setIsOpen(true)
+            }}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            New Role
+          </button>
+        </div>
       </div>
 
       {loading && (

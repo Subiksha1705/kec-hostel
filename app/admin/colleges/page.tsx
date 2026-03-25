@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import Toast from '@/components/ui/Toast'
@@ -24,24 +26,13 @@ const emptyCollege: CollegeForm = { name: '', location: '', domain: '' }
 const emptyAdmin: AdminForm = { name: '', email: '', password: '', collegeId: '' }
 
 export default function AdminCollegesPage() {
-  const [colleges, setColleges] = useState<College[]>([])
+  const { data: colleges = [], loading, refresh, fetchedAt } =
+    useCachedFetch<College[]>('/api/superadmin/colleges')
   const [isOpen, setIsOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [form, setForm] = useState<CollegeForm>(emptyCollege)
   const [adminForm, setAdminForm] = useState<AdminForm>(emptyAdmin)
-  const [loading, setLoading] = useState(true)
   const { toast, showToast, clearToast } = useToast()
-
-  const load = async () => {
-    setLoading(true)
-    const { data } = await apiJson<{ ok: boolean; data: College[] }>('/api/superadmin/colleges')
-    if (data?.ok) setColleges(data.data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const createCollege = async () => {
     if (!form.name.trim() || !form.location.trim()) {
@@ -63,7 +54,8 @@ export default function AdminCollegesPage() {
     setIsOpen(false)
     setForm(emptyCollege)
     showToast('College created', 'success')
-    load()
+    cache.invalidate('/api/superadmin/colleges')
+    refresh()
   }
 
   const openAdminModal = (collegeId: string) => {
@@ -92,7 +84,8 @@ export default function AdminCollegesPage() {
     setAdminOpen(false)
     setAdminForm(emptyAdmin)
     showToast('Admin created', 'success')
-    load()
+    cache.invalidate('/api/superadmin/colleges')
+    refresh()
   }
 
   return (
@@ -101,20 +94,23 @@ export default function AdminCollegesPage() {
         <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           Colleges
         </h1>
-        <button
-          onClick={() => setIsOpen(true)}
-          style={{
-            background: 'var(--sage)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius)',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          Create College
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+          <button
+            onClick={() => setIsOpen(true)}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Create College
+          </button>
+        </div>
       </div>
 
       <Table

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Users, Shield, GraduationCap, CalendarCheck } from 'lucide-react'
-import { apiJson } from '@/lib/api/client'
+import { useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import StatCard from '@/components/ui/StatCard'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -24,15 +24,7 @@ type DashboardData = {
 }
 
 export default function AdminDashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    apiJson<{ ok: boolean; data: DashboardData }>('/api/dashboard').then(({ data: res }) => {
-      if (res?.ok) setData(res.data)
-      setLoading(false)
-    })
-  }, [])
+  const { data, loading, refresh, fetchedAt } = useCachedFetch<DashboardData>('/api/dashboard')
 
   const stats = data?.stats ?? { students: 0, members: 0, roles: 0, pending: 0 }
   const recentLeaves = data?.recentLeaves ?? []
@@ -55,9 +47,12 @@ export default function AdminDashboardPage() {
         <h2 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           Recent Leaves
         </h2>
-        <Link href="/admin/leaves" style={{ color: 'var(--sage-dark)', textDecoration: 'none' }}>
-          View all →
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+          <Link href="/admin/leaves" style={{ color: 'var(--sage-dark)', textDecoration: 'none' }}>
+            View all →
+          </Link>
+        </div>
       </div>
 
       <Table

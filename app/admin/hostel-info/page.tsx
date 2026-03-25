@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 
 type HostelInfo = {
   name: string
@@ -22,30 +24,23 @@ const emptyForm: HostelInfo = {
 }
 
 export default function AdminHostelInfoPage() {
+  const { data: hostelInfo, loading, refresh, fetchedAt } =
+    useCachedFetch<HostelInfo>('/api/hostel-info')
   const [form, setForm] = useState<HostelInfo>(emptyForm)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  const load = async () => {
-    setLoading(true)
-    const { data } = await apiJson<{ ok: boolean; data: HostelInfo }>('/api/hostel-info')
-    if (data?.ok) {
-      setForm({
-        name: data.data.name ?? '',
-        location: data.data.location ?? '',
-        capacity: data.data.capacity ?? 0,
-        description: data.data.description ?? '',
-        rules: data.data.rules ?? '',
-        chatbotContext: data.data.chatbotContext ?? '',
-      })
-    }
-    setLoading(false)
-  }
-
   useEffect(() => {
-    load()
-  }, [])
+    if (!hostelInfo) return
+    setForm({
+      name: hostelInfo.name ?? '',
+      location: hostelInfo.location ?? '',
+      capacity: hostelInfo.capacity ?? 0,
+      description: hostelInfo.description ?? '',
+      rules: hostelInfo.rules ?? '',
+      chatbotContext: hostelInfo.chatbotContext ?? '',
+    })
+  }, [hostelInfo])
 
   const save = async () => {
     setSaving(true)
@@ -65,6 +60,8 @@ export default function AdminHostelInfoPage() {
     setSaving(false)
     if (res.ok) {
       setSuccess(true)
+      cache.invalidate('/api/hostel-info')
+      refresh()
       setTimeout(() => setSuccess(false), 1500)
     }
   }
@@ -75,9 +72,12 @@ export default function AdminHostelInfoPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '720px' }}>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        Hostel Info
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Hostel Info
+        </h1>
+        <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ display: 'grid', gap: '12px' }}>
         <div style={{ display: 'grid', gap: '6px' }}>

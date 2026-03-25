@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -25,27 +27,19 @@ const filters = ['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const
 type Filter = (typeof filters)[number]
 
 export default function AdminLeavesPage() {
-  const [leaves, setLeaves] = useState<Leave[]>([])
-  const [members, setMembers] = useState<Member[]>([])
   const [filter, setFilter] = useState<Filter>('ALL')
   const [assigning, setAssigning] = useState<Leave | null>(null)
   const [memberId, setMemberId] = useState('')
-  const [loading, setLoading] = useState(true)
+  const { data: leaves = [], loading: leavesLoading, refresh: refreshLeaves, fetchedAt } =
+    useCachedFetch<Leave[]>('/api/leaves')
+  const { data: members = [], refresh: refreshMembers } =
+    useCachedFetch<Member[]>('/api/members')
 
-  const load = async () => {
-    setLoading(true)
-    const [leavesRes, membersRes] = await Promise.all([
-      apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves'),
-      apiJson<{ ok: boolean; data: Member[] }>('/api/members'),
-    ])
-    if (leavesRes.data?.ok) setLeaves(leavesRes.data.data)
-    if (membersRes.data?.ok) setMembers(membersRes.data.data)
-    setLoading(false)
+  const loading = leavesLoading
+
+  const handleRefresh = async () => {
+    await Promise.all([refreshLeaves(), refreshMembers()])
   }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const filteredLeaves = useMemo(() => {
     if (filter === 'ALL') return leaves
@@ -60,12 +54,14 @@ export default function AdminLeavesPage() {
     })
     setAssigning(null)
     setMemberId('')
-    load()
+    cache.invalidate('/api/leaves')
+    refreshLeaves()
   }
 
   const approveDirect = async (id: string) => {
     await apiJson(`/api/leaves/${id}/approve`, { method: 'PUT', body: JSON.stringify({}) })
-    load()
+    cache.invalidate('/api/leaves')
+    refreshLeaves()
   }
 
   const rejectDirect = async (id: string) => {
@@ -73,14 +69,18 @@ export default function AdminLeavesPage() {
       method: 'PUT',
       body: JSON.stringify({ reason: '' }),
     })
-    load()
+    cache.invalidate('/api/leaves')
+    refreshLeaves()
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        Leaves
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Leaves
+        </h1>
+        <RefreshButton onRefresh={handleRefresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         {filters.map((item) => {

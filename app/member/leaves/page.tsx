@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
 import Toast from '@/components/ui/Toast'
@@ -34,31 +36,26 @@ function getMyId(): string | null {
 }
 
 export default function MemberLeavesPage() {
-  const [leaves, setLeaves] = useState<Leave[]>([])
+  const { data: leaves = [], loading: leavesLoading, refresh: refreshLeaves, fetchedAt } =
+    useCachedFetch<Leave[]>('/api/leaves')
+  const { data: perms = [], loading: permsLoading, refresh: refreshPerms } =
+    useCachedFetch<Permission[]>('/api/permissions')
   const [filter, setFilter] = useState<Filter>('ALL')
   const [myId, setMyId] = useState<string | null>(null)
-  const [canApprove, setCanApprove] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const canApprove = useMemo(
+    () => perms.find((p) => p.module === 'leaves')?.canApprove ?? false,
+    [perms]
+  )
+  const loading = leavesLoading || permsLoading
   const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
-
-  const load = async () => {
-    setLoading(true)
-    const [leavesRes, permsRes] = await Promise.all([
-      apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves'),
-      apiJson<{ ok: boolean; data: Permission[] }>('/api/permissions'),
-    ])
-    if (leavesRes.data?.ok) setLeaves(leavesRes.data.data)
-    if (permsRes.data?.ok) {
-      const leavesPerm = permsRes.data.data.find((p) => p.module === 'leaves')
-      setCanApprove(leavesPerm?.canApprove ?? false)
-    }
-    setLoading(false)
-  }
 
   useEffect(() => {
     setMyId(getMyId())
-    load()
   }, [])
+
+  const handleRefresh = async () => {
+    await Promise.all([refreshLeaves(), refreshPerms()])
+  }
 
   const filteredLeaves = useMemo(() => {
     if (filter === 'ALL') return leaves
@@ -72,7 +69,8 @@ export default function MemberLeavesPage() {
     })
     if (res.ok) setToast({ message: 'Leave approved', variant: 'success' })
     else setToast({ message: 'Failed to approve', variant: 'error' })
-    load()
+    cache.invalidate('/api/leaves')
+    refreshLeaves()
   }
 
   const reject = async (id: string) => {
@@ -82,14 +80,18 @@ export default function MemberLeavesPage() {
     })
     if (res.ok) setToast({ message: 'Leave rejected', variant: 'success' })
     else setToast({ message: 'Failed to reject', variant: 'error' })
-    load()
+    cache.invalidate('/api/leaves')
+    refreshLeaves()
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        Leaves
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Leaves
+        </h1>
+        <RefreshButton onRefresh={handleRefresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         {filters.map((item) => {

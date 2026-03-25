@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
 
@@ -21,28 +23,20 @@ const filters = ['ALL', 'PENDING', 'RESOLVED'] as const
 type Filter = (typeof filters)[number]
 
 export default function MemberComplaintsPage() {
-  const [complaints, setComplaints] = useState<Complaint[]>([])
+  const { data: complaints = [], loading: complaintsLoading, refresh: refreshComplaints, fetchedAt } =
+    useCachedFetch<Complaint[]>('/api/complaints')
+  const { data: perms = [], loading: permsLoading, refresh: refreshPerms } =
+    useCachedFetch<Permission[]>('/api/permissions')
   const [filter, setFilter] = useState<Filter>('ALL')
-  const [loading, setLoading] = useState(true)
-  const [canEdit, setCanEdit] = useState(false)
+  const canEdit = useMemo(
+    () => perms.find((p) => p.module === 'complaints')?.canEdit ?? false,
+    [perms]
+  )
+  const loading = complaintsLoading || permsLoading
 
-  const load = async () => {
-    setLoading(true)
-    const [complaintsRes, permsRes] = await Promise.all([
-      apiJson<{ ok: boolean; data: Complaint[] }>('/api/complaints'),
-      apiJson<{ ok: boolean; data: Permission[] }>('/api/permissions'),
-    ])
-    if (complaintsRes.data?.ok) setComplaints(complaintsRes.data.data)
-    if (permsRes.data?.ok) {
-      const complaintsPermission = permsRes.data.data.find((p) => p.module === 'complaints')
-      setCanEdit(complaintsPermission?.canEdit ?? false)
-    }
-    setLoading(false)
+  const handleRefresh = async () => {
+    await Promise.all([refreshComplaints(), refreshPerms()])
   }
-
-  useEffect(() => {
-    load()
-  }, [])
 
   const filteredComplaints = useMemo(() => {
     if (filter === 'ALL') return complaints
@@ -54,14 +48,18 @@ export default function MemberComplaintsPage() {
       method: 'PUT',
       body: JSON.stringify({ status: 'RESOLVED' }),
     })
-    load()
+    cache.invalidate('/api/complaints')
+    refreshComplaints()
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        Complaints
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Complaints
+        </h1>
+        <RefreshButton onRefresh={handleRefresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         {filters.map((item) => {

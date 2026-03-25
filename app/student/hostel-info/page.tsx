@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { apiJson } from '@/lib/api/client'
+import { useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 
 type HostelInfo = {
   name: string
@@ -12,18 +12,7 @@ type HostelInfo = {
 }
 
 export default function StudentHostelInfoPage() {
-  const [hostel, setHostel] = useState<HostelInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      const { data } = await apiJson<{ ok: boolean; data: HostelInfo }>('/api/hostel-info')
-      if (data?.ok) setHostel(data.data)
-      setLoading(false)
-    }
-    load()
-  }, [])
+  const { data: hostel, loading, refresh, fetchedAt } = useCachedFetch<HostelInfo>('/api/hostel-info')
 
   if (loading) {
     return <div style={{ color: 'var(--text-secondary)' }}>Loading hostel info...</div>
@@ -37,9 +26,12 @@ export default function StudentHostelInfoPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        Hostel Information
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Hostel Information
+        </h1>
+        <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
         {[

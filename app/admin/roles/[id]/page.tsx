@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { apiJson } from '@/lib/api/client'
+import { cache, useCachedFetch } from '@/lib/cache'
+import RefreshButton from '@/components/ui/RefreshButton'
 import Toast from '@/components/ui/Toast'
 
 const modules = ['students', 'leaves', 'complaints'] as const
@@ -20,55 +22,43 @@ type Permission = {
 export default function RolePermissionsPage() {
   const params = useParams<{ id: string }>()
   const roleId = params.id
+  const { data: roleData, loading, refresh, fetchedAt } = useCachedFetch<{
+    id: string
+    name: string
+    permissions: Permission[]
+  }>(`/api/roles/${roleId}`)
   const [roleName, setRoleName] = useState('')
   const [permissions, setPermissions] = useState<Permission[]>([])
-  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
   const [toastVariant, setToastVariant] = useState<'success' | 'error'>('success')
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      const { data } = await apiJson<{
-        ok: boolean
-        data: { id: string; name: string; permissions: Permission[] }
-      }>(`/api/roles/${roleId}`)
-
-      if (!data?.ok) {
-        setLoading(false)
-        return
-      }
-
-      setRoleName(data.data.name)
-
-      const perms = data.data.permissions ?? []
-      const merged = modules.map((module) => {
-        const existing = perms.find((perm) => perm.module === module)
-        return (
-          existing ?? {
-            module,
-            canView: false,
-            canCreate: false,
-            canEdit: false,
-            canDelete: false,
-            canApprove: false,
-          }
-        )
-      })
-      const normalized = merged.map((perm) => ({
-        ...perm,
-        canView: Boolean(perm.canView),
-        canCreate: Boolean(perm.canCreate),
-        canEdit: Boolean(perm.canEdit),
-        canDelete: Boolean(perm.canDelete),
-        canApprove: Boolean((perm as Permission).canApprove),
-      }))
-      setPermissions(normalized)
-      setLoading(false)
-    }
-
-    load()
-  }, [roleId])
+    if (!roleData) return
+    setRoleName(roleData.name)
+    const perms = roleData.permissions ?? []
+    const merged = modules.map((module) => {
+      const existing = perms.find((perm) => perm.module === module)
+      return (
+        existing ?? {
+          module,
+          canView: false,
+          canCreate: false,
+          canEdit: false,
+          canDelete: false,
+          canApprove: false,
+        }
+      )
+    })
+    const normalized = merged.map((perm) => ({
+      ...perm,
+      canView: Boolean(perm.canView),
+      canCreate: Boolean(perm.canCreate),
+      canEdit: Boolean(perm.canEdit),
+      canDelete: Boolean(perm.canDelete),
+      canApprove: Boolean((perm as Permission).canApprove),
+    }))
+    setPermissions(normalized)
+  }, [roleData])
 
   const updatePermission = (module: Permission['module'], key: keyof Permission, value: boolean) => {
     setPermissions((prev) =>
@@ -155,6 +145,11 @@ export default function RolePermissionsPage() {
     if (res.ok) {
       setToast('Permissions saved successfully')
       setToastVariant('success')
+      if (roleId) {
+        cache.invalidate(`/api/roles/${roleId}`)
+        cache.invalidate('/api/roles')
+        refresh()
+      }
     } else {
       setToast(data?.error ?? 'Failed to save permissions')
       setToastVariant('error')
@@ -168,9 +163,12 @@ export default function RolePermissionsPage() {
       <Link href="/admin/roles" style={{ color: 'var(--sage-dark)', textDecoration: 'none' }}>
         ← Back to roles
       </Link>
-      <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
-        {heading}
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          {heading}
+        </h1>
+        <RefreshButton onRefresh={refresh} fetchedAt={fetchedAt} />
+      </div>
 
       <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
         {loading && (

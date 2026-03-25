@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck, MessageSquare, Building, School } from 'lucide-react'
 import { apiJson } from '@/lib/api/client'
+import { cache } from '@/lib/cache'
 
 type UserType = 'ADMIN' | 'MEMBER' | 'STUDENT'
 
@@ -102,6 +103,7 @@ export default function Sidebar({ userType }: { userType: UserType }) {
         localStorage.removeItem(key)
       )
     }
+    cache.clear()
     try {
       await apiJson('/api/auth/logout', { method: 'POST' })
     } catch {}

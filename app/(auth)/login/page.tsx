@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiJson } from '@/lib/api/client'
+import { cache } from '@/lib/cache'
 import ErrorBanner from '@/components/ui/ErrorBanner'
 import LoadingOverlay from '@/components/ui/LoadingOverlay'
 
@@ -150,6 +151,7 @@ export default function LoginPage() {
     localStorage.setItem('userType', isSuperLogin ? 'SUPER' : loginType)
     localStorage.setItem('userName', data.data.name ?? email)
     if (data.data.roleName) localStorage.setItem('userRoleName', data.data.roleName)
+    cache.clear()
 
     if (isSuperLogin) {
       router.replace('/admin/colleges')
