@@ -6,6 +6,7 @@ import RefreshButton from '@/components/ui/RefreshButton'
 import StatCard from '@/components/ui/StatCard'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
+import AnnouncementsCarousel from '@/components/announcements/AnnouncementsCarousel'
 
 type Leave = {
   id: string
@@ -15,9 +16,23 @@ type Leave = {
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
 }
 
+type Announcement = {
+  id: string
+  title: string
+  description: string
+  imageUrl?: string | null
+  linkUrl?: string | null
+  linkLabel?: string | null
+  postedBy: string
+  role: string
+  createdAt: string
+}
+
 export default function StudentDashboardPage() {
   const { data, loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
+  const { data: announcementsData } = useCachedFetch<Announcement[]>('/api/announcements')
   const leaves = data ?? []
+  const announcements = announcementsData ?? []
 
   const total = leaves.length
   const approved = leaves.filter((leave) => leave.status === 'APPROVED').length
@@ -30,6 +45,14 @@ export default function StudentDashboardPage() {
         <StatCard label="Approved" value={approved} icon={<CheckCircle2 size={20} />} />
         <StatCard label="Pending" value={pending} icon={<Clock size={20} />} />
       </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
+          Announcements
+        </h2>
+      </div>
+
+      <AnnouncementsCarousel announcements={announcements} />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h2 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
