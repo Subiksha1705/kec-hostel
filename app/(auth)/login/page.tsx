@@ -35,8 +35,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [banner, setBanner] = useState<string | null>(null)
 
-  // Search colleges
+  // Search colleges (skip for superadmin login)
   useEffect(() => {
+    if (isSuperLogin) return
     if (query.length < 3) {
       setColleges([])
       return
@@ -48,7 +49,7 @@ export default function LoginPage() {
       if (data?.ok) setColleges(data.data)
     }, 300)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, isSuperLogin])
 
   useEffect(() => {
     const message = searchParams.get('error') ?? searchParams.get('message')
@@ -56,6 +57,7 @@ export default function LoginPage() {
   }, [searchParams])
 
   useEffect(() => {
+    if (isSuperLogin) return
     const storedId = localStorage.getItem('collegeId')
     const storedName = localStorage.getItem('collegeName')
     const storedDomain = localStorage.getItem('collegeDomain')
@@ -64,10 +66,10 @@ export default function LoginPage() {
       setQuery(storedName)
       setDropdownOpen(false)
     }
-  }, [])
+  }, [isSuperLogin])
 
   useEffect(() => {
-    if (!selectedCollege) {
+    if (isSuperLogin || !selectedCollege) {
       setRoles([])
       setSelectedRoleId(null)
       return
@@ -86,7 +88,7 @@ export default function LoginPage() {
     return () => {
       isMounted = false
     }
-  }, [selectedCollege])
+  }, [isSuperLogin, selectedCollege])
 
   const loginOptions = useMemo<LoginOption[]>(() => {
     return [
@@ -150,7 +152,7 @@ export default function LoginPage() {
     if (data.data.roleName) localStorage.setItem('userRoleName', data.data.roleName)
 
     if (isSuperLogin) {
-      router.replace(selectedCollege ? '/admin/dashboard' : '/register')
+      router.replace('/admin/colleges')
       return
     }
 
@@ -250,7 +252,19 @@ export default function LoginPage() {
             </div>
             <button
               type="button"
-              onClick={() => setIsSuperLogin((prev) => !prev)}
+              onClick={() => {
+                setIsSuperLogin((prev) => {
+                  const next = !prev
+                  if (next) {
+                    setSelectedCollege(null)
+                    setQuery('')
+                    setColleges([])
+                    setSelectedRoleId(null)
+                    setRoles([])
+                  }
+                  return next
+                })
+              }}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -263,115 +277,114 @@ export default function LoginPage() {
               {isSuperLogin ? 'Back to college login' : 'Login as Super Admin'}
             </button>
           </div>
-          {isSuperLogin && (
-            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '10px' }}>
-              You can optionally select a college to jump into its admin dashboard after sign in.
-            </div>
-          )}
-          <div style={{ position: 'relative' }}>
-            <input
-              ref={searchRef}
-              value={query}
-              onChange={(e) => {
-                const val = e.target.value
-                setQuery(val)
-                setDropdownOpen(true)
-                if (selectedCollege && val !== selectedCollege.name) {
-                  setSelectedCollege(null)
-                }
-              }}
-              onFocus={() => setDropdownOpen(true)}
-              placeholder="Type 3 or more characters..."
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 'var(--radius)',
-                border: selectedCollege
-                  ? '1.5px solid var(--brand, var(--sage-dark))'
-                  : '1px solid var(--border)',
-                background: 'var(--surface-2)',
-                boxSizing: 'border-box',
-                outline: 'none',
-              }}
-            />
-            {selectedCollege && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCollege(null)
-                  setQuery('')
-                  setColleges([])
-                }}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)',
-                  fontSize: '16px',
-                  lineHeight: 1,
-                }}
-              >
-                ✕
-              </button>
-            )}
-            {dropdownOpen && query.length >= 3 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  zIndex: 10,
-                  maxHeight: '200px',
-                  overflowY: 'auto',
-                  marginTop: '4px',
-                }}
-              >
-                {colleges.length === 0 ? (
-                  <div
+          {!isSuperLogin && (
+            <>
+              <div style={{ position: 'relative' }}>
+                <input
+                  ref={searchRef}
+                  value={query}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setQuery(val)
+                    setDropdownOpen(true)
+                    if (selectedCollege && val !== selectedCollege.name) {
+                      setSelectedCollege(null)
+                    }
+                  }}
+                  onFocus={() => setDropdownOpen(true)}
+                  placeholder="Type 3 or more characters..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: selectedCollege
+                      ? '1.5px solid var(--brand, var(--sage-dark))'
+                      : '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
+                />
+                {selectedCollege && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCollege(null)
+                      setQuery('')
+                      setColleges([])
+                    }}
                     style={{
-                      padding: '12px 14px',
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
                       color: 'var(--text-secondary)',
-                      fontSize: '14px',
+                      fontSize: '16px',
+                      lineHeight: 1,
                     }}
                   >
-                    No institutions found
-                  </div>
-                ) : (
-                  colleges.map((college) => (
-                    <div
-                      key={college.id}
-                      onClick={() => selectCollege(college)}
-                      style={{
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--border)',
-                        fontSize: '14px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <div style={{ fontWeight: 600 }}>{college.name}</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                        {college.location}
+                    ✕
+                  </button>
+                )}
+                {dropdownOpen && query.length >= 3 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius)',
+                      zIndex: 10,
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      marginTop: '4px',
+                    }}
+                  >
+                    {colleges.length === 0 ? (
+                      <div
+                        style={{
+                          padding: '12px 14px',
+                          color: 'var(--text-secondary)',
+                          fontSize: '14px',
+                        }}
+                      >
+                        No institutions found
                       </div>
-                    </div>
-                  ))
+                    ) : (
+                      colleges.map((college) => (
+                        <div
+                          key={college.id}
+                          onClick={() => selectCollege(college)}
+                          style={{
+                            padding: '10px 14px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid var(--border)',
+                            fontSize: '14px',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div style={{ fontWeight: 600 }}>{college.name}</div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                            {college.location}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          {query.length > 0 && query.length < 3 && (
-            <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Please enter 3 or more characters
-            </div>
+              {query.length > 0 && query.length < 3 && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Please enter 3 or more characters
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -488,6 +501,18 @@ export default function LoginPage() {
                 Sign In
               </button>
 
+              <a
+                href="/guest"
+                style={{
+                  textAlign: 'center',
+                  color: 'var(--sage-dark)',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                }}
+              >
+                View hostel info without logging in →
+              </a>
             </form>
           </div>
         )}

@@ -146,6 +146,9 @@ model Hostel {
   capacity  Int
   collegeId String
   createdAt DateTime @default(now())
+  description    String?
+  rules          String?
+  chatbotContext String?
 
   college   College       @relation(fields: [collegeId], references: [id])
   students  Student[]

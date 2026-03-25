@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck } from 'lucide-react'
+import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck, MessageSquare, Building, School } from 'lucide-react'
 import { apiJson } from '@/lib/api/client'
 
 type UserType = 'ADMIN' | 'MEMBER' | 'STUDENT'
@@ -17,9 +17,10 @@ export default function Sidebar({ userType }: { userType: UserType }) {
   const pathname = usePathname()
   const [userName, setUserName] = useState('User')
   const [roleLabel, setRoleLabel] = useState('User')
-  const [permissions, setPermissions] = useState<{ students: boolean; leaves: boolean }>({
+  const [permissions, setPermissions] = useState<{ students: boolean; leaves: boolean; complaints: boolean }>({
     students: true,
     leaves: true,
+    complaints: true,
   })
   const [profileOpen, setProfileOpen] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
@@ -44,7 +45,8 @@ export default function Sidebar({ userType }: { userType: UserType }) {
         const perms = data.data ?? []
         const students = perms.find((p) => p.module === 'students')?.canView ?? false
         const leaves = perms.find((p) => p.module === 'leaves')?.canView ?? false
-        setPermissions({ students, leaves })
+        const complaints = perms.find((p) => p.module === 'complaints')?.canView ?? false
+        setPermissions({ students, leaves, complaints })
       })
       .catch(() => {})
 
@@ -55,12 +57,16 @@ export default function Sidebar({ userType }: { userType: UserType }) {
 
   const navItems = useMemo(() => {
     if (userType === 'ADMIN') {
+      const isSuper = typeof window !== 'undefined' && localStorage.getItem('userType') === 'SUPER'
       return [
         { href: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+        ...(isSuper ? [{ href: '/admin/colleges', label: 'Colleges', icon: <School size={18} /> }] : []),
         { href: '/admin/roles', label: 'Roles', icon: <Shield size={18} /> },
         { href: '/admin/members', label: 'Members', icon: <Users size={18} /> },
         { href: '/admin/students', label: 'Students', icon: <GraduationCap size={18} /> },
         { href: '/admin/leaves', label: 'Leaves', icon: <CalendarCheck size={18} /> },
+        { href: '/admin/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
+        { href: '/admin/hostel-info', label: 'Hostel Info', icon: <Building size={18} /> },
       ]
     }
     if (userType === 'MEMBER') {
@@ -72,13 +78,18 @@ export default function Sidebar({ userType }: { userType: UserType }) {
         ...(permissions.leaves
           ? [{ href: '/member/leaves', label: 'Leaves', icon: <CalendarCheck size={18} /> }]
           : []),
+        ...(permissions.complaints
+          ? [{ href: '/member/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> }]
+          : []),
       ]
     }
     return [
       { href: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
       { href: '/student/leaves', label: 'My Leaves', icon: <CalendarCheck size={18} /> },
+      { href: '/student/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
+      { href: '/student/hostel-info', label: 'Hostel Info', icon: <Building size={18} /> },
     ]
-  }, [permissions.leaves, permissions.students, userType])
+  }, [permissions.complaints, permissions.leaves, permissions.students, userType])
 
   return (
     <aside

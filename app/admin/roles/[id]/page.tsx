@@ -75,6 +75,58 @@ export default function RolePermissionsPage() {
       prev.map((perm) => {
         if (perm.module !== module) return perm
         const next = { ...perm, [key]: value }
+        if (key !== 'canView' && value) {
+          next.canView = true
+        }
+        if (key === 'canView' && !value) {
+          next.canCreate = false
+          next.canEdit = false
+          next.canDelete = false
+          next.canApprove = false
+        }
+        if (key === 'canApprove' && perm.module !== 'leaves') {
+          next.canApprove = false
+        }
+        return next
+      })
+    )
+  }
+
+  const toggleRowAll = (module: Permission['module'], value: boolean) => {
+    setPermissions((prev) =>
+      prev.map((perm) => {
+        if (perm.module !== module) return perm
+        return {
+          ...perm,
+          canView: value,
+          canCreate: value,
+          canEdit: value,
+          canDelete: value,
+          canApprove: perm.module === 'leaves' ? value : false,
+        }
+      })
+    )
+  }
+
+  const toggleAll = (value: boolean) => {
+    setPermissions((prev) =>
+      prev.map((perm) => ({
+        ...perm,
+        canView: value,
+        canCreate: value,
+        canEdit: value,
+        canDelete: value,
+        canApprove: perm.module === 'leaves' ? value : false,
+      }))
+    )
+  }
+
+  const toggleColumnAll = (key: keyof Permission, value: boolean) => {
+    setPermissions((prev) =>
+      prev.map((perm) => {
+        if (key === 'canApprove' && perm.module !== 'leaves') return perm
+        const next = { ...perm, [key]: value }
+        if (key !== 'canView' && value) next.canView = true
         if (key === 'canView' && !value) {
           next.canCreate = false
           next.canEdit = false
@@ -130,13 +182,64 @@ export default function RolePermissionsPage() {
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '12px 16px' }}>Module</th>
+              <th style={{ textAlign: 'center', padding: '12px 16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                  <span>All</span>
+                  <input
+                    type="checkbox"
+                    checked={permissions.every(
+                      (perm) =>
+                        perm.canView &&
+                        perm.canCreate &&
+                        perm.canEdit &&
+                        perm.canDelete &&
+                        (perm.module !== 'leaves' || perm.canApprove)
+                    )}
+                    onChange={(event) => toggleAll(event.target.checked)}
+                    style={{ accentColor: 'var(--sage)', cursor: 'pointer' }}
+                  />
+                </div>
+              </th>
               {['View', 'Create', 'Edit', 'Delete', 'Approve'].map((label) => (
                 <th key={label} style={{ textAlign: 'center', padding: '12px 16px' }}>
-                  {label === 'Approve' ? (
-                    <span title="Can approve/reject leave requests">Approve</span>
-                  ) : (
-                    label
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                    {label === 'Approve' ? (
+                      <span title="Can approve/reject leave requests">Approve</span>
+                    ) : (
+                      label
+                    )}
+                    <input
+                      type="checkbox"
+                      checked={permissions.every((perm) =>
+                        label === 'Approve'
+                          ? perm.module === 'leaves'
+                            ? perm.canApprove
+                            : true
+                          : label === 'View'
+                            ? perm.canView
+                            : label === 'Create'
+                              ? perm.canCreate
+                              : label === 'Edit'
+                                ? perm.canEdit
+                                : perm.canDelete
+                      )}
+                      onChange={(event) =>
+                        toggleColumnAll(
+                          label === 'Approve'
+                            ? 'canApprove'
+                            : label === 'View'
+                              ? 'canView'
+                              : label === 'Create'
+                                ? 'canCreate'
+                                : label === 'Edit'
+                                  ? 'canEdit'
+                                  : 'canDelete',
+                          event.target.checked
+                        )
+                      }
+                      style={{ accentColor: 'var(--sage)', cursor: 'pointer' }}
+                    />
+                  </div>
                 </th>
               ))}
             </tr>
@@ -145,9 +248,24 @@ export default function RolePermissionsPage() {
             {permissions.map((perm, index) => (
               <tr
                 key={perm.module}
+                onDoubleClick={() => toggleRowAll(perm.module, true)}
                 style={{ background: index % 2 === 0 ? 'var(--surface)' : 'var(--surface-2)' }}
               >
                 <td style={{ padding: '12px 16px', textTransform: 'capitalize' }}>{perm.module}</td>
+                <td style={{ textAlign: 'center', padding: '12px 16px' }}>
+                  <input
+                    type="checkbox"
+                    checked={
+                      perm.canView &&
+                      perm.canCreate &&
+                      perm.canEdit &&
+                      perm.canDelete &&
+                      (perm.module !== 'leaves' || perm.canApprove)
+                    }
+                    onChange={(event) => toggleRowAll(perm.module, event.target.checked)}
+                    style={{ accentColor: 'var(--sage)', cursor: 'pointer' }}
+                  />
+                </td>
                 {(['canView', 'canCreate', 'canEdit', 'canDelete', 'canApprove'] as const).map((key) => {
                   const disabled =
                     (key !== 'canView' && !perm.canView) ||

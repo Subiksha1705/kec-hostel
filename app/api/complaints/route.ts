@@ -7,12 +7,10 @@ import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
 
 const createSchema = z.object({
-  reason: z.string().min(1),
-  fromDate: z.string().datetime(),
-  toDate: z.string().datetime(),
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().min(1, 'Description is required'),
 })
 
-// GET /api/leaves
 export async function GET(req: NextRequest) {
   try {
     const session = getSession(req)
@@ -20,32 +18,32 @@ export async function GET(req: NextRequest) {
     let where: object
 
     if (session.type === 'ADMIN' || session.type === 'SUPER') {
-      where = { collegeId: session.collegeId }
+      where = {
+        student: { collegeId: session.collegeId },
+      }
     } else if (session.type === 'MEMBER') {
-      await requirePermission(session.roleId!, 'leaves', 'canView')
-      const studentFilter = scopeFilter({
+      await requirePermission(session.roleId!, 'complaints', 'canView')
+      const filter = scopeFilter({
         collegeId: session.collegeId,
         classId: session.classId ?? null,
         hostelId: session.hostelId ?? null,
       })
-      where = { student: studentFilter, assignedToId: session.sub }
+      where = { student: filter }
     } else if (session.type === 'STUDENT') {
       where = { studentId: session.sub }
     } else {
       return err('Forbidden', 403)
     }
 
-    const leaves = await prisma.leave.findMany({
+    const complaints = await prisma.complaint.findMany({
       where,
       include: {
         student: { select: { id: true, name: true, rollNumber: true } },
-        assignedTo: { select: { id: true, name: true } },
-        reviewedBy: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    return ok(leaves)
+    return ok(complaints)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'
     if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)
@@ -54,29 +52,26 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/leaves — Student submits a leave request
 export async function POST(req: NextRequest) {
   try {
     const session = getSession(req)
-    if (session.type !== 'STUDENT') return err('Only students can submit leaves', 403)
+    if (session.type !== 'STUDENT') return err('Only students can submit complaints', 403)
 
     const body = createSchema.parse(await req.json())
 
     const student = await prisma.student.findUnique({ where: { id: session.sub } })
     if (!student) return err('Student not found', 404)
 
-    const leave = await prisma.leave.create({
+    const complaint = await prisma.complaint.create({
       data: {
         studentId: session.sub,
-        reason: body.reason,
-        fromDate: new Date(body.fromDate),
-        toDate: new Date(body.toDate),
+        title: body.title,
+        description: body.description,
         status: 'PENDING',
-        collegeId: student.collegeId,
       },
     })
 
-    return ok(leave, 201)
+    return ok(complaint, 201)
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'
     if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)

@@ -65,18 +65,24 @@ export default function MemberLeavesPage() {
     return leaves.filter((l) => l.status === filter)
   }, [filter, leaves])
 
-  const act = async (id: string, action: 'approve' | 'reject') => {
-    if (!window.confirm(action === 'approve' ? 'Approve this leave?' : 'Reject this leave?')) return
-    const { res, data } = await apiJson<{ ok: boolean; error?: string }>(
-      `/api/leaves/${id}/${action}`,
-      { method: 'PUT' }
-    )
-    if (!res.ok || !data?.ok) {
-      setToast({ message: data?.error ?? `Failed to ${action} leave`, variant: 'error' })
-    } else {
-      setToast({ message: `Leave ${action === 'approve' ? 'approved' : 'rejected'}`, variant: 'success' })
-      load()
-    }
+  const approve = async (id: string) => {
+    const { res } = await apiJson(`/api/leaves/${id}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify({}),
+    })
+    if (res.ok) setToast({ message: 'Leave approved', variant: 'success' })
+    else setToast({ message: 'Failed to approve', variant: 'error' })
+    load()
+  }
+
+  const reject = async (id: string) => {
+    const { res } = await apiJson(`/api/leaves/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({}),
+    })
+    if (res.ok) setToast({ message: 'Leave rejected', variant: 'success' })
+    else setToast({ message: 'Failed to reject', variant: 'error' })
+    load()
   }
 
   return (
@@ -153,12 +159,11 @@ export default function MemberLeavesPage() {
             key: 'actions',
             label: 'Actions',
             render: (item: Leave) => {
-              const isMine = myId && item.assignedTo?.id === myId
-              if (item.status === 'PENDING' && isMine && canApprove) {
+              if (item.status === 'PENDING' && canApprove) {
                 return (
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
-                      onClick={() => act(item.id, 'approve')}
+                      onClick={() => approve(item.id)}
                       style={{
                         background: 'var(--mint)',
                         color: '#1a5c3a',
@@ -172,7 +177,7 @@ export default function MemberLeavesPage() {
                       Approve
                     </button>
                     <button
-                      onClick={() => act(item.id, 'reject')}
+                      onClick={() => reject(item.id)}
                       style={{
                         background: 'var(--rose)',
                         color: '#7a2020',
@@ -188,7 +193,7 @@ export default function MemberLeavesPage() {
                   </div>
                 )
               }
-              if (item.status === 'PENDING' && isMine && !canApprove) {
+              if (item.status === 'PENDING' && !canApprove) {
                 return <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No approve permission</span>
               }
               return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>

@@ -24,6 +24,7 @@ export default function StudentLeavesPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const load = async () => {
     const { data } = await apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves')
@@ -35,6 +36,7 @@ export default function StudentLeavesPage() {
   }, [])
 
   const submit = async () => {
+    if (submitting) return
     setError('')
     if (!reason.trim() || !fromDate || !toDate) {
       setError('Please fill all fields')
@@ -51,10 +53,12 @@ export default function StudentLeavesPage() {
       toDate: new Date(`${toDate}T00:00:00`).toISOString(),
     }
 
+    setSubmitting(true)
     const { res, data } = await apiJson<{ ok: boolean; error?: string }>('/api/leaves', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
+    setSubmitting(false)
 
     if (!res.ok || !data?.ok) {
       setError(data?.error ?? 'Failed to submit leave')
@@ -149,17 +153,18 @@ export default function StudentLeavesPage() {
           ) : null}
           <button
             onClick={submit}
+            disabled={submitting}
             style={{
               background: 'var(--sage)',
               color: 'white',
               border: 'none',
               padding: '10px 14px',
               borderRadius: 'var(--radius)',
-              cursor: 'pointer',
+              cursor: submitting ? 'not-allowed' : 'pointer',
               fontWeight: 600,
             }}
           >
-            Submit Leave
+            {submitting ? 'Submitting...' : 'Submit Leave'}
           </button>
         </div>
       </Modal>

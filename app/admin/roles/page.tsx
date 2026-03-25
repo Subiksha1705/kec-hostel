@@ -12,6 +12,26 @@ type Role = {
   _count: { members: number }
 }
 
+const modules = ['students', 'leaves', 'complaints'] as const
+
+type Permission = {
+  module: (typeof modules)[number]
+  canView: boolean
+  canCreate: boolean
+  canEdit: boolean
+  canDelete: boolean
+  canApprove: boolean
+}
+
+const emptyPermissions: Permission[] = modules.map((module) => ({
+  module,
+  canView: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
+  canApprove: false,
+}))
+
 export default function RolesPage() {
   const router = useRouter()
   const [roles, setRoles] = useState<Role[]>([])
@@ -19,6 +39,7 @@ export default function RolesPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [newRoleName, setNewRoleName] = useState('')
   const [error, setError] = useState('')
+  const [newPermissions, setNewPermissions] = useState<Permission[]>(emptyPermissions)
 
   const load = async () => {
     setLoading(true)
@@ -45,9 +66,92 @@ export default function RolesPage() {
       setError(data?.error ?? 'Failed to create role')
       return
     }
+    const roleId = data.data.id as string
+    const payload = newPermissions.map((perm) => ({
+      ...perm,
+      canCreate: perm.canView ? perm.canCreate : false,
+      canEdit: perm.canView ? perm.canEdit : false,
+      canDelete: perm.canView ? perm.canDelete : false,
+      canApprove: perm.canView ? Boolean(perm.canApprove) : false,
+    }))
+    const permissionsRes = await apiJson<{ ok: boolean; error?: string }>(
+      `/api/roles/${roleId}/permissions`,
+      { method: 'PUT', body: JSON.stringify(payload) }
+    )
+    if (!permissionsRes.res.ok || !permissionsRes.data?.ok) {
+      setError(permissionsRes.data?.error ?? 'Role created, but failed to save permissions')
+      return
+    }
     setNewRoleName('')
+    setNewPermissions(emptyPermissions)
     setIsOpen(false)
     load()
+  }
+
+  const updatePermission = (module: Permission['module'], key: keyof Permission, value: boolean) => {
+    setNewPermissions((prev) =>
+      prev.map((perm) => {
+        if (perm.module !== module) return perm
+        const next = { ...perm, [key]: value }
+        if (key !== 'canView' && value) next.canView = true
+        if (key === 'canView' && !value) {
+          next.canCreate = false
+          next.canEdit = false
+          next.canDelete = false
+          next.canApprove = false
+        }
+        if (key === 'canApprove' && perm.module !== 'leaves') {
+          next.canApprove = false
+        }
+        return next
+      })
+    )
+  }
+
+  const toggleRowAll = (module: Permission['module'], value: boolean) => {
+    setNewPermissions((prev) =>
+      prev.map((perm) => {
+        if (perm.module !== module) return perm
+        return {
+          ...perm,
+          canView: value,
+          canCreate: value,
+          canEdit: value,
+          canDelete: value,
+          canApprove: perm.module === 'leaves' ? value : false,
+        }
+      })
+    )
+  }
+
+  const toggleAll = (value: boolean) => {
+    setNewPermissions((prev) =>
+      prev.map((perm) => ({
+        ...perm,
+        canView: value,
+        canCreate: value,
+        canEdit: value,
+        canDelete: value,
+        canApprove: perm.module === 'leaves' ? value : false,
+      }))
+    )
+  }
+
+  const toggleColumnAll = (key: keyof Permission, value: boolean) => {
+    setNewPermissions((prev) =>
+      prev.map((perm) => {
+        if (key === 'canApprove' && perm.module !== 'leaves') return perm
+        const next = { ...perm, [key]: value }
+        if (key !== 'canView' && value) next.canView = true
+        if (key === 'canView' && !value) {
+          next.canCreate = false
+          next.canEdit = false
+          next.canDelete = false
+          next.canApprove = false
+        }
+        return next
+      })
+    )
   }
 
   const deleteRole = async (roleId: string) => {
@@ -62,7 +166,12 @@ export default function RolesPage() {
           Roles
         </h1>
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setNewRoleName('')
+            setNewPermissions(emptyPermissions)
+            setError('')
+            setIsOpen(true)
+          }}
           style={{
             background: 'var(--sage)',
             color: 'white',
@@ -183,6 +292,86 @@ export default function RolesPage() {
               background: 'var(--surface-2)',
             }}
           />
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+            Select permissions for this role.
+          </div>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-2)' }}>
+                  <th style={{ textAlign: 'left', padding: '10px 12px' }}>Module</th>
+                  <th style={{ textAlign: 'center', padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                      <span>All</span>
+                      <input
+                        type="checkbox"
+                        checked={newPermissions.every(
+                          (perm) =>
+                            perm.canView &&
+                            perm.canCreate &&
+                            perm.canEdit &&
+                            perm.canDelete &&
+                            (perm.module !== 'leaves' || perm.canApprove)
+                        )}
+                        onChange={(event) => toggleAll(event.target.checked)}
+                        style={{ accentColor: 'var(--sage)', cursor: 'pointer' }}
+                      />
+                    </div>
+                  </th>
+                  {(['canView', 'canCreate', 'canEdit', 'canDelete', 'canApprove'] as const).map((key) => (
+                    <th key={key} style={{ textAlign: 'center', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                        <span>{key === 'canView' ? 'View' : key === 'canCreate' ? 'Create' : key === 'canEdit' ? 'Edit' : key === 'canDelete' ? 'Delete' : 'Approve'}</span>
+                        <input
+                          type="checkbox"
+                          checked={newPermissions.every((perm) =>
+                            key === 'canApprove' ? (perm.module === 'leaves' ? perm.canApprove : true) : perm[key]
+                          )}
+                          onChange={(event) => toggleColumnAll(key, event.target.checked)}
+                          style={{ accentColor: 'var(--sage)', cursor: 'pointer' }}
+                        />
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {newPermissions.map((perm, index) => (
+                  <tr
+                    key={perm.module}
+                    onDoubleClick={() => toggleRowAll(perm.module, true)}
+                    style={{ background: index % 2 === 0 ? 'var(--surface)' : 'var(--surface-2)' }}
+                  >
+                    <td style={{ padding: '10px 12px', textTransform: 'capitalize' }}>{perm.module}</td>
+                    <td style={{ textAlign: 'center', padding: '10px 12px' }}>
+                      <input
+                        type="checkbox"
+                        checked={perm.canView && perm.canCreate && perm.canEdit && perm.canDelete && (perm.module !== 'leaves' || perm.canApprove)}
+                        onChange={(event) => toggleRowAll(perm.module, event.target.checked)}
+                        style={{ accentColor: 'var(--sage)', cursor: 'pointer' }}
+                      />
+                    </td>
+                    {(['canView', 'canCreate', 'canEdit', 'canDelete', 'canApprove'] as const).map((key) => {
+                      const disabled =
+                        (key !== 'canView' && !perm.canView) ||
+                        (key === 'canApprove' && perm.module !== 'leaves')
+                      return (
+                        <td key={key} style={{ textAlign: 'center', padding: '10px 12px' }}>
+                          <input
+                            type="checkbox"
+                            checked={perm[key]}
+                            disabled={disabled}
+                            onChange={(event) => updatePermission(perm.module, key, event.target.checked)}
+                            style={{ accentColor: 'var(--sage)', cursor: disabled ? 'not-allowed' : 'pointer' }}
+                          />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {error ? (
             <div style={{ background: 'var(--rose)', color: '#7a2020', padding: '8px 10px', borderRadius: 'var(--radius)' }}>
               {error}

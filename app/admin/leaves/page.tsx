@@ -63,6 +63,19 @@ export default function AdminLeavesPage() {
     load()
   }
 
+  const approveDirect = async (id: string) => {
+    await apiJson(`/api/leaves/${id}/approve`, { method: 'PUT', body: JSON.stringify({}) })
+    load()
+  }
+
+  const rejectDirect = async (id: string) => {
+    await apiJson(`/api/leaves/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason: '' }),
+    })
+    load()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <h1 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
@@ -110,23 +123,6 @@ export default function AdminLeavesPage() {
             key: 'actions',
             label: 'Actions',
             render: (item: Leave) => {
-              if (item.status === 'PENDING' && !item.assignedTo) {
-                return (
-                  <button
-                    onClick={() => setAssigning(item)}
-                    style={{
-                      background: 'var(--sage-light)',
-                      color: 'var(--sage-dark)',
-                      border: '1px solid var(--border)',
-                      padding: '6px 10px',
-                      borderRadius: 'var(--radius)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Assign
-                  </button>
-                )
-              }
               if (item.status !== 'PENDING') {
                 return (
                   <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
@@ -134,7 +130,54 @@ export default function AdminLeavesPage() {
                   </span>
                 )
               }
-              return <span style={{ color: 'var(--text-muted)' }}>Assigned</span>
+              return (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {!item.assignedTo && (
+                    <button
+                      onClick={() => setAssigning(item)}
+                      style={{
+                        background: 'var(--surface-2)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border)',
+                        padding: '5px 10px',
+                        borderRadius: 'var(--radius)',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                      }}
+                    >
+                      Assign
+                    </button>
+                  )}
+                  <button
+                    onClick={() => approveDirect(item.id)}
+                    style={{
+                      background: 'var(--mint)',
+                      color: '#1a5c3a',
+                      border: '1px solid var(--border)',
+                      padding: '5px 10px',
+                      borderRadius: 'var(--radius)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                    }}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => rejectDirect(item.id)}
+                    style={{
+                      background: 'var(--rose)',
+                      color: '#7a2020',
+                      border: '1px solid var(--border)',
+                      padding: '5px 10px',
+                      borderRadius: 'var(--radius)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                    }}
+                  >
+                    Reject
+                  </button>
+                </div>
+              )
             },
           },
         ]}
