@@ -89,7 +89,7 @@ export default function Sidebar({ userType, width }: { userType: UserType; width
       { href: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
       { href: '/student/leaves', label: 'My Leaves', icon: <CalendarCheck size={18} /> },
       { href: '/student/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
-      { href: '/student/hostel-info', label: 'Hostel Info', icon: <Building size={18} /> },
+      { href: '/student/student-info', label: 'Student Info', icon: <Building size={18} /> },
     ]
   }, [permissions.complaints, permissions.leaves, permissions.students, userType])
 

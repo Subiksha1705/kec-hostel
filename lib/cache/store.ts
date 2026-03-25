@@ -12,6 +12,7 @@ const MANUAL_ONLY_KEYS = new Set([
   '/api/roles',
   '/api/members',
   '/api/hostel-info',
+  '/api/student-info',
   '/api/students',
   '/api/superadmin/colleges',
   '/api/permissions',
