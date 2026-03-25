@@ -41,12 +41,14 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [classes, setClasses] = useState<Option[]>([])
   const [hostels, setHostels] = useState<Option[]>([])
+  const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
   const { toast, showToast, clearToast } = useToast()
 
   const load = async () => {
+    setLoading(true)
     const [studentsRes, classesRes, hostelsRes] = await Promise.all([
       apiJson<{ ok: boolean; data: Student[] }>('/api/students'),
       apiJson<{ ok: boolean; data: Option[] }>('/api/classes'),
@@ -55,6 +57,7 @@ export default function StudentsPage() {
     if (studentsRes.data?.ok) setStudents(studentsRes.data.data)
     if (classesRes.data?.ok) setClasses(classesRes.data.data)
     if (hostelsRes.data?.ok) setHostels(hostelsRes.data.data)
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -172,6 +175,7 @@ export default function StudentsPage() {
       </div>
 
       <Table
+        loading={loading}
         columns={[
           { key: 'rollNumber', label: 'Roll No' },
           { key: 'name', label: 'Name' },

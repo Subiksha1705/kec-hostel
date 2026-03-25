@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth/password'
+import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
 
@@ -14,6 +15,9 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const session = getSession(req)
+    if (session.type !== 'SUPER') return err('Forbidden', 403)
+
     const body = schema.parse(await req.json())
 
     const existing = await prisma.admin.findUnique({ where: { email: body.email } })
@@ -38,6 +42,8 @@ export async function POST(req: NextRequest) {
 
     return ok({ collegeId: result.college.id, adminId: result.admin.id }, 201)
   } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Server error'
+    if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)
     if (e instanceof z.ZodError) return err('Invalid request body', 400)
     return err('Server error', 500)
   }

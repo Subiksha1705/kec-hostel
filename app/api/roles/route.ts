@@ -12,7 +12,7 @@ const createSchema = z.object({
 export async function GET(req: NextRequest) {
   try {
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const roles = await prisma.role.findMany({
       where: { collegeId: session.collegeId },
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const body = createSchema.parse(await req.json())
 

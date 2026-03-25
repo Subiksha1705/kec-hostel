@@ -15,7 +15,7 @@ const rowSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const body = (await req.json()) as { rows: unknown[] }
     if (!Array.isArray(body.rows) || body.rows.length === 0) {

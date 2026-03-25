@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 
-type Action = 'canView' | 'canCreate' | 'canEdit' | 'canDelete'
+type Action = 'canView' | 'canCreate' | 'canEdit' | 'canDelete' | 'canApprove'
 
 export const MODULES = ['students', 'leaves', 'complaints', 'reviews'] as const
 export type Module = (typeof MODULES)[number]
@@ -39,6 +39,7 @@ export async function loadPermissions(
       canCreate: row.canCreate,
       canEdit: row.canEdit,
       canDelete: row.canDelete,
+      canApprove: row.canApprove,
     })
   }
   return map

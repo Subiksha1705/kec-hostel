@@ -30,14 +30,17 @@ export default function AdminLeavesPage() {
   const [filter, setFilter] = useState<Filter>('ALL')
   const [assigning, setAssigning] = useState<Leave | null>(null)
   const [memberId, setMemberId] = useState('')
+  const [loading, setLoading] = useState(true)
 
   const load = async () => {
+    setLoading(true)
     const [leavesRes, membersRes] = await Promise.all([
       apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves'),
       apiJson<{ ok: boolean; data: Member[] }>('/api/members'),
     ])
     if (leavesRes.data?.ok) setLeaves(leavesRes.data.data)
     if (membersRes.data?.ok) setMembers(membersRes.data.data)
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -90,6 +93,7 @@ export default function AdminLeavesPage() {
       </div>
 
       <Table
+        loading={loading}
         columns={[
           { key: 'student', label: 'Student', render: (item: Leave) => item.student.name },
           { key: 'roll', label: 'Roll No', render: (item: Leave) => item.student.rollNumber },

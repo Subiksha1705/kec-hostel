@@ -14,28 +14,34 @@ type Permission = {
   canCreate: boolean
   canEdit: boolean
   canDelete: boolean
+  canApprove: boolean
 }
-
-type Role = { id: string; name: string }
 
 export default function RolePermissionsPage() {
   const params = useParams<{ id: string }>()
   const roleId = params.id
   const [roleName, setRoleName] = useState('')
   const [permissions, setPermissions] = useState<Permission[]>([])
+  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
+  const [toastVariant, setToastVariant] = useState<'success' | 'error'>('success')
 
   useEffect(() => {
     const load = async () => {
-      const [rolesRes, permsRes] = await Promise.all([
-        apiJson<{ ok: boolean; data: Role[] }>('/api/roles'),
-        apiJson<{ ok: boolean; data: Permission[] }>(`/api/roles/${roleId}/permissions`),
-      ])
+      setLoading(true)
+      const { data } = await apiJson<{
+        ok: boolean
+        data: { id: string; name: string; permissions: Permission[] }
+      }>(`/api/roles/${roleId}`)
 
-      const role = rolesRes.data?.data?.find((item) => item.id === roleId)
-      setRoleName(role?.name ?? 'Role')
+      if (!data?.ok) {
+        setLoading(false)
+        return
+      }
 
-      const perms = permsRes.data?.data ?? []
+      setRoleName(data.data.name)
+
+      const perms = data.data.permissions ?? []
       const merged = modules.map((module) => {
         const existing = perms.find((perm) => perm.module === module)
         return (
@@ -45,10 +51,20 @@ export default function RolePermissionsPage() {
             canCreate: false,
             canEdit: false,
             canDelete: false,
+            canApprove: false,
           }
         )
       })
-      setPermissions(merged)
+      const normalized = merged.map((perm) => ({
+        ...perm,
+        canView: Boolean(perm.canView),
+        canCreate: Boolean(perm.canCreate),
+        canEdit: Boolean(perm.canEdit),
+        canDelete: Boolean(perm.canDelete),
+        canApprove: Boolean((perm as Permission).canApprove),
+      }))
+      setPermissions(normalized)
+      setLoading(false)
     }
 
     load()
@@ -63,6 +79,7 @@ export default function RolePermissionsPage() {
           next.canCreate = false
           next.canEdit = false
           next.canDelete = false
+          next.canApprove = false
         }
         return next
       })
@@ -75,15 +92,20 @@ export default function RolePermissionsPage() {
       canCreate: perm.canView ? perm.canCreate : false,
       canEdit: perm.canView ? perm.canEdit : false,
       canDelete: perm.canView ? perm.canDelete : false,
+      canApprove: perm.canView ? Boolean(perm.canApprove) : false,
     }))
 
-    const { res } = await apiJson(`/api/roles/${roleId}/permissions`, {
+    const { res, data } = await apiJson<{ ok: boolean; error?: string }>(`/api/roles/${roleId}/permissions`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
 
     if (res.ok) {
-      setToast('Permissions saved')
+      setToast('Permissions saved successfully')
+      setToastVariant('success')
+    } else {
+      setToast(data?.error ?? 'Failed to save permissions')
+      setToastVariant('error')
     }
   }
 
@@ -99,13 +121,22 @@ export default function RolePermissionsPage() {
       </h1>
 
       <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
+        {loading && (
+          <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+            Loading permissions...
+          </div>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '12px 16px' }}>Module</th>
-              {['View', 'Create', 'Edit', 'Delete'].map((label) => (
+              {['View', 'Create', 'Edit', 'Delete', 'Approve'].map((label) => (
                 <th key={label} style={{ textAlign: 'center', padding: '12px 16px' }}>
-                  {label}
+                  {label === 'Approve' ? (
+                    <span title="Can approve/reject leave requests">Approve</span>
+                  ) : (
+                    label
+                  )}
                 </th>
               ))}
             </tr>
@@ -117,8 +148,10 @@ export default function RolePermissionsPage() {
                 style={{ background: index % 2 === 0 ? 'var(--surface)' : 'var(--surface-2)' }}
               >
                 <td style={{ padding: '12px 16px', textTransform: 'capitalize' }}>{perm.module}</td>
-                {(['canView', 'canCreate', 'canEdit', 'canDelete'] as const).map((key) => {
-                  const disabled = key !== 'canView' && !perm.canView
+                {(['canView', 'canCreate', 'canEdit', 'canDelete', 'canApprove'] as const).map((key) => {
+                  const disabled =
+                    (key !== 'canView' && !perm.canView) ||
+                    (key === 'canApprove' && perm.module !== 'leaves')
                   return (
                     <td key={key} style={{ textAlign: 'center', padding: '12px 16px' }}>
                       <input
@@ -126,7 +159,7 @@ export default function RolePermissionsPage() {
                         checked={perm[key]}
                         disabled={disabled}
                         onChange={(event) => updatePermission(perm.module, key, event.target.checked)}
-                        style={{ accentColor: 'var(--sage)' }}
+                        style={{ accentColor: 'var(--sage)', cursor: disabled ? 'not-allowed' : 'pointer' }}
                       />
                     </td>
                   )
@@ -139,21 +172,22 @@ export default function RolePermissionsPage() {
 
       <button
         onClick={save}
+        disabled={loading}
         style={{
           alignSelf: 'flex-start',
-          background: 'var(--sage)',
-          color: 'white',
+          background: loading ? 'var(--surface-2)' : 'var(--sage)',
+          color: loading ? 'var(--text-muted)' : 'white',
           border: 'none',
           padding: '10px 14px',
           borderRadius: 'var(--radius)',
-          cursor: 'pointer',
+          cursor: loading ? 'not-allowed' : 'pointer',
           fontWeight: 600,
         }}
       >
         Save Permissions
       </button>
 
-      {toast ? <Toast message={toast} onClose={() => setToast('')} /> : null}
+      {toast ? <Toast message={toast} variant={toastVariant} onClose={() => setToast('')} /> : null}
     </div>
   )
 }

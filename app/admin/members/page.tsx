@@ -45,6 +45,7 @@ export default function MembersPage() {
   const [roles, setRoles] = useState<Role[]>([])
   const [classes, setClasses] = useState<Option[]>([])
   const [hostels, setHostels] = useState<Option[]>([])
+  const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
@@ -57,6 +58,7 @@ export default function MembersPage() {
   const collegeDomain = typeof window !== 'undefined' ? localStorage.getItem('collegeDomain') : null
 
   const load = async () => {
+    setLoading(true)
     const [membersRes, rolesRes, classesRes, hostelsRes] = await Promise.all([
       apiJson<{ ok: boolean; data: Member[] }>('/api/members'),
       apiJson<{ ok: boolean; data: Role[] }>('/api/roles'),
@@ -67,6 +69,7 @@ export default function MembersPage() {
     if (rolesRes.data?.ok) setRoles(rolesRes.data.data)
     if (classesRes.data?.ok) setClasses(classesRes.data.data)
     if (hostelsRes.data?.ok) setHostels(hostelsRes.data.data)
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -272,6 +275,7 @@ export default function MembersPage() {
       </div>
 
       <Table
+        loading={loading}
         columns={[
           { key: 'name', label: 'Name' },
           { key: 'email', label: 'Email' },

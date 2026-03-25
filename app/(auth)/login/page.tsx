@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const [roles, setRoles] = useState<RoleOption[]>([])
+  const [isSuperLogin, setIsSuperLogin] = useState(false)
 
   // Step 2 — login form
   const [loginType, setLoginType] = useState<LoginType>('STUDENT')
@@ -113,13 +114,14 @@ export default function LoginPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
-    if (!selectedCollege) {
+    if (!isSuperLogin && !selectedCollege) {
       setError('Please select your institution first')
       return
     }
 
-    const endpoint =
-      loginType === 'ADMIN'
+    const endpoint = isSuperLogin
+      ? '/api/auth/super/login'
+      : loginType === 'ADMIN'
         ? '/api/auth/admin/login'
         : loginType === 'MEMBER'
           ? '/api/auth/member/login'
@@ -128,7 +130,11 @@ export default function LoginPage() {
     setLoading(true)
     const { res, data } = await apiJson<{ ok: boolean; data?: any; error?: string }>(endpoint, {
       method: 'POST',
-      body: JSON.stringify({ email, password, collegeId: selectedCollege.id }),
+      body: JSON.stringify({
+        email,
+        password,
+        ...(selectedCollege ? { collegeId: selectedCollege.id } : {}),
+      }),
     })
     setLoading(false)
 
@@ -139,9 +145,14 @@ export default function LoginPage() {
 
     localStorage.setItem('accessToken', data.data.accessToken)
     localStorage.setItem('refreshToken', data.data.refreshToken)
-    localStorage.setItem('userType', loginType)
+    localStorage.setItem('userType', isSuperLogin ? 'SUPER' : loginType)
     localStorage.setItem('userName', data.data.name ?? email)
     if (data.data.roleName) localStorage.setItem('userRoleName', data.data.roleName)
+
+    if (isSuperLogin) {
+      router.replace(selectedCollege ? '/admin/dashboard' : '/register')
+      return
+    }
 
     router.replace(
       loginType === 'ADMIN'
@@ -222,21 +233,50 @@ export default function LoginPage() {
         >
           <div
             style={{
-              fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
-              fontSize: '22px',
-              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              marginBottom: '12px',
             }}
           >
-            Select your institution
+            <div
+              style={{
+                fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
+                fontSize: '22px',
+              }}
+            >
+              {isSuperLogin ? 'Super Admin Login' : 'Select your institution'}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsSuperLogin((prev) => !prev)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--sage-dark)',
+                cursor: 'pointer',
+                fontSize: '13px',
+                padding: 0,
+              }}
+            >
+              {isSuperLogin ? 'Back to college login' : 'Login as Super Admin'}
+            </button>
           </div>
+          {isSuperLogin && (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '10px' }}>
+              You can optionally select a college to jump into its admin dashboard after sign in.
+            </div>
+          )}
           <div style={{ position: 'relative' }}>
             <input
               ref={searchRef}
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value)
+                const val = e.target.value
+                setQuery(val)
                 setDropdownOpen(true)
-                if (selectedCollege && e.target.value !== selectedCollege.name) {
+                if (selectedCollege && val !== selectedCollege.name) {
                   setSelectedCollege(null)
                 }
               }}
@@ -246,9 +286,12 @@ export default function LoginPage() {
                 width: '100%',
                 padding: '10px 12px',
                 borderRadius: 'var(--radius)',
-                border: `1px solid ${selectedCollege ? 'var(--sage)' : 'var(--border)'}`,
+                border: selectedCollege
+                  ? '1.5px solid var(--brand, var(--sage-dark))'
+                  : '1px solid var(--border)',
                 background: 'var(--surface-2)',
                 boxSizing: 'border-box',
+                outline: 'none',
               }}
             />
             {selectedCollege && (
@@ -333,7 +376,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login form — only shown after college is selected */}
-        {selectedCollege && (
+        {(selectedCollege || isSuperLogin) && (
           <div
             style={{
               background: 'var(--surface)',
@@ -344,36 +387,38 @@ export default function LoginPage() {
           >
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {/* User type tabs */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {loginOptions.map((item) => {
-                  const active =
-                    item.value === 'MEMBER'
-                      ? loginType === 'MEMBER' && selectedRoleId === item.roleId
-                      : loginType === item.value
-                  return (
-                    <button
-                      key={item.roleId ?? item.value}
-                      type="button"
-                      onClick={() => {
-                        setLoginType(item.value)
-                        setSelectedRoleId(item.roleId ?? null)
-                      }}
-                      style={{
-                        flex: item.value === 'MEMBER' ? '0 0 auto' : 1,
-                        padding: '10px',
-                        borderRadius: 'var(--radius)',
-                        border: '1px solid var(--border)',
-                        background: active ? 'var(--sage-light)' : 'var(--surface)',
-                        color: active ? 'var(--sage-dark)' : 'var(--text-secondary)',
-                        fontWeight: active ? 600 : 500,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  )
-                })}
-              </div>
+              {!isSuperLogin && (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {loginOptions.map((item) => {
+                    const active =
+                      item.value === 'MEMBER'
+                        ? loginType === 'MEMBER' && selectedRoleId === item.roleId
+                        : loginType === item.value
+                    return (
+                      <button
+                        key={item.roleId ?? item.value}
+                        type="button"
+                        onClick={() => {
+                          setLoginType(item.value)
+                          setSelectedRoleId(item.roleId ?? null)
+                        }}
+                        style={{
+                          flex: item.value === 'MEMBER' ? '0 0 auto' : 1,
+                          padding: '10px',
+                          borderRadius: 'var(--radius)',
+                          border: '1px solid var(--border)',
+                          background: active ? 'var(--sage-light)' : 'var(--surface)',
+                          color: active ? 'var(--sage-dark)' : 'var(--text-secondary)',
+                          fontWeight: active ? 600 : 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Email</label>
@@ -443,23 +488,6 @@ export default function LoginPage() {
                 Sign In
               </button>
 
-              {loginType === 'ADMIN' && (
-                <button
-                  type="button"
-                  onClick={() => router.push('/register')}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--sage-dark)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    padding: 0,
-                    fontSize: '14px',
-                  }}
-                >
-                  New college? Register here
-                </button>
-              )}
             </form>
           </div>
         )}

@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     let where: object
 
-    if (session.type === 'ADMIN') {
+    if (session.type === 'ADMIN' || session.type === 'SUPER') {
       where = { collegeId: session.collegeId }
     } else if (session.type === 'MEMBER') {
       await requirePermission(session.roleId!, 'leaves', 'canView')

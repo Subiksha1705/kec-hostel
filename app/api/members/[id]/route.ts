@@ -19,7 +19,7 @@ export async function PUT(
   try {
     const { id } = await params
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const member = await prisma.adminMember.findUnique({ where: { id } })
     if (!member || member.collegeId !== session.collegeId) return err('Not found', 404)
@@ -49,7 +49,7 @@ export async function DELETE(
   try {
     const { id } = await params
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const member = await prisma.adminMember.findUnique({ where: { id } })
     if (!member || member.collegeId !== session.collegeId) return err('Not found', 404)

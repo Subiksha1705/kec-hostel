@@ -13,6 +13,7 @@ const permissionSchema = z.array(
     canCreate: z.boolean(),
     canEdit: z.boolean(),
     canDelete: z.boolean(),
+    canApprove: z.boolean(),
   })
 )
 
@@ -24,7 +25,7 @@ export async function GET(
   try {
     const { id } = await params
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const role = await prisma.role.findUnique({ where: { id } })
     if (!role || role.collegeId !== session.collegeId) return err('Not found', 404)
@@ -46,7 +47,7 @@ export async function PUT(
   try {
     const { id } = await params
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const role = await prisma.role.findUnique({ where: { id } })
     if (!role || role.collegeId !== session.collegeId) return err('Not found', 404)

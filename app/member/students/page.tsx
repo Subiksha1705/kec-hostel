@@ -15,10 +15,13 @@ type Student = {
 
 export default function MemberStudentsPage() {
   const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     apiJson<{ ok: boolean; data: Student[] }>('/api/students').then(({ data }) => {
       if (data?.ok) setStudents(data.data)
+      setLoading(false)
     })
   }, [])
 
@@ -29,6 +32,7 @@ export default function MemberStudentsPage() {
       </h1>
 
       <Table
+        loading={loading}
         columns={[
           { key: 'rollNumber', label: 'Roll No' },
           { key: 'name', label: 'Name' },

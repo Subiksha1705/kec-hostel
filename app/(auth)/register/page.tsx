@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiJson } from '@/lib/api/client'
 
@@ -13,6 +13,14 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [isSuper, setIsSuper] = useState(false)
+  const [checked, setChecked] = useState(false)
+
+  useEffect(() => {
+    const type = localStorage.getItem('userType')
+    setIsSuper(type === 'SUPER')
+    setChecked(true)
+  }, [])
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -47,6 +55,59 @@ export default function RegisterPage() {
     }
 
     router.replace('/login?registered=1')
+  }
+
+  if (checked && !isSuper) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+        }}
+      >
+        <div
+          style={{
+            width: 'min(560px, 100%)',
+            background: 'var(--surface)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-md)',
+            padding: '32px',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif',
+              fontSize: '24px',
+              marginBottom: '8px',
+            }}
+          >
+            Super Admin Only
+          </div>
+          <div style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            Creating a college is restricted to super admins.
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push('/login')}
+            style={{
+              background: 'var(--sage)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Back to login
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

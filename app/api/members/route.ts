@@ -18,7 +18,7 @@ const createSchema = z.object({
 export async function GET(req: NextRequest) {
   try {
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const members = await prisma.adminMember.findMany({
       where: { collegeId: session.collegeId },
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = getSession(req)
-    if (session.type !== 'ADMIN') return err('Forbidden', 403)
+    if (session.type !== 'ADMIN' && session.type !== 'SUPER') return err('Forbidden', 403)
 
     const raw = await req.json()
     const body = createSchema.parse({

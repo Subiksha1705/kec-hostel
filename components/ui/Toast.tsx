@@ -2,34 +2,28 @@
 
 import { useEffect, useState } from 'react'
 
-type Props = {
+type ToastProps = {
   message: string
   variant?: 'success' | 'error' | 'info'
   onClose: () => void
 }
 
-const ICONS = {
-  success: '✓',
-  error: '✕',
-  info: 'ℹ',
+const CONFIG = {
+  success: { bg: 'var(--mint)', color: '#1a5c3a', icon: '✓' },
+  error: { bg: 'var(--rose)', color: '#7a2020', icon: '✕' },
+  info: { bg: 'var(--sky, #b8d4e8)', color: '#1a3a5c', icon: 'ℹ' },
 }
 
-const COLORS = {
-  success: { bg: 'var(--mint)', color: '#1a5c3a', border: '#6bc49a' },
-  error: { bg: 'var(--rose)', color: '#7a2020', border: '#d88888' },
-  info: { bg: 'var(--sky)', color: '#1a3a5c', border: '#88b8d8' },
-}
-
-export default function Toast({ message, variant = 'success', onClose }: Props) {
+export default function Toast({ message, variant = 'success', onClose }: ToastProps) {
   const [visible, setVisible] = useState(true)
-  const c = COLORS[variant]
+  const c = CONFIG[variant]
 
   useEffect(() => {
-    const hide = setTimeout(() => setVisible(false), 3200)
-    const close = setTimeout(() => onClose(), 3500)
+    const t1 = setTimeout(() => setVisible(false), 3200)
+    const t2 = setTimeout(onClose, 3500)
     return () => {
-      clearTimeout(hide)
-      clearTimeout(close)
+      clearTimeout(t1)
+      clearTimeout(t2)
     }
   }, [onClose])
 
@@ -44,7 +38,6 @@ export default function Toast({ message, variant = 'success', onClose }: Props) 
         gap: '10px',
         background: c.bg,
         color: c.color,
-        border: `1px solid ${c.border}`,
         padding: '12px 16px',
         borderRadius: 'var(--radius)',
         boxShadow: 'var(--shadow-md)',
@@ -54,26 +47,23 @@ export default function Toast({ message, variant = 'success', onClose }: Props) 
         maxWidth: '360px',
         opacity: visible ? 1 : 0,
         transition: 'opacity 0.3s ease',
-        pointerEvents: 'all',
       }}
     >
-      <span style={{ fontWeight: 700, fontSize: '16px' }}>{ICONS[variant]}</span>
-      <span>{message}</span>
+      <span style={{ fontWeight: 700 }}>{c.icon}</span>
+      <span style={{ flex: 1 }}>{message}</span>
       <button
         onClick={() => {
           setVisible(false)
           setTimeout(onClose, 300)
         }}
         style={{
-          marginLeft: '8px',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
           color: c.color,
-          fontSize: '16px',
-          opacity: 0.6,
+          fontSize: '14px',
+          opacity: 0.7,
           padding: 0,
-          lineHeight: 1,
         }}
       >
         ✕

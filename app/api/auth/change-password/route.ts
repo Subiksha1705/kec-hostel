@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     let storedHash: string
 
-    if (session.type === 'ADMIN') {
+    if (session.type === 'ADMIN' || session.type === 'SUPER') {
       const admin = await prisma.admin.findUnique({ where: { id: session.sub } })
       if (!admin) return err('User not found', 404)
       storedHash = admin.password
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     const hashed = await hashPassword(newPassword)
 
-    if (session.type === 'ADMIN') {
+    if (session.type === 'ADMIN' || session.type === 'SUPER') {
       await prisma.admin.update({ where: { id: session.sub }, data: { password: hashed } })
     } else if (session.type === 'MEMBER') {
       await prisma.adminMember.update({ where: { id: session.sub }, data: { password: hashed } })

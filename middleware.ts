@@ -29,7 +29,10 @@ export async function middleware(req: NextRequest) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
     const { payload } = await jose.jwtVerify(token, secret)
 
-    if ((payload as any).type !== requiredType) {
+    const type = (payload as any).type
+    const allowed =
+      type === requiredType || (requiredType === 'ADMIN' && type === 'SUPER')
+    if (!allowed) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
 

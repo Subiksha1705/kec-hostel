@@ -18,7 +18,7 @@ export async function PUT(
     const body = schema.parse(await req.json())
 
     if (session.type === 'MEMBER') {
-      await requirePermission(session.roleId!, 'leaves', 'canEdit')
+      await requirePermission(session.roleId!, 'leaves', 'canApprove')
     }
 
     const leave = await prisma.leave.findUnique({ where: { id } })

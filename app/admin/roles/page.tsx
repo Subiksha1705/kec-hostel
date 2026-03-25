@@ -15,13 +15,16 @@ type Role = {
 export default function RolesPage() {
   const router = useRouter()
   const [roles, setRoles] = useState<Role[]>([])
+  const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [newRoleName, setNewRoleName] = useState('')
   const [error, setError] = useState('')
 
   const load = async () => {
+    setLoading(true)
     const { data } = await apiJson<{ ok: boolean; data: Role[] }>('/api/roles')
     if (data?.ok) setRoles(data.data)
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -73,6 +76,12 @@ export default function RolesPage() {
           New Role
         </button>
       </div>
+
+      {loading && (
+        <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+          Loading...
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
         {roles.map((role) => {

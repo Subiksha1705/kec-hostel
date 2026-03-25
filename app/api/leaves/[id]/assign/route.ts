@@ -19,7 +19,7 @@ export async function PUT(
 
     if (session.type === 'MEMBER') {
       await requirePermission(session.roleId!, 'leaves', 'canCreate')
-    } else if (session.type !== 'ADMIN') {
+    } else if (session.type !== 'ADMIN' && session.type !== 'SUPER') {
       return err('Forbidden', 403)
     }
 

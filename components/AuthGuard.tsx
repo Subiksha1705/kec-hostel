@@ -15,7 +15,9 @@ export default function AuthGuard({
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
     const type = localStorage.getItem('userType')
-    if (!token || type !== allowedType) {
+    const isAllowed =
+      type === allowedType || (allowedType === 'ADMIN' && type === 'SUPER')
+    if (!token || !isAllowed) {
       router.replace('/login')
     }
   }, [allowedType, router])

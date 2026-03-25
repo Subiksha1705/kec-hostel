@@ -18,34 +18,32 @@ type Leave = {
   assignedTo?: { name: string } | null
 }
 
+type DashboardData = {
+  stats: { students: number; members: number; roles: number; pending: number }
+  recentLeaves: Leave[]
+}
+
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({ students: 0, members: 0, roles: 0, pending: 0 })
-  const [recentLeaves, setRecentLeaves] = useState<Leave[]>([])
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const load = async () => {
-      const [studentsRes, membersRes, rolesRes, leavesRes] = await Promise.all([
-        apiJson<{ ok: boolean; data: any[] }>('/api/students'),
-        apiJson<{ ok: boolean; data: any[] }>('/api/members'),
-        apiJson<{ ok: boolean; data: any[] }>('/api/roles'),
-        apiJson<{ ok: boolean; data: Leave[] }>('/api/leaves'),
-      ])
-
-      const students = studentsRes.data?.data?.length ?? 0
-      const members = membersRes.data?.data?.length ?? 0
-      const roles = rolesRes.data?.data?.length ?? 0
-      const leaves = leavesRes.data?.data ?? []
-      const pending = leaves.filter((leave) => leave.status === 'PENDING').length
-
-      setStats({ students, members, roles, pending })
-      setRecentLeaves(leaves.slice(0, 5))
-    }
-
-    load()
+    apiJson<{ ok: boolean; data: DashboardData }>('/api/dashboard').then(({ data: res }) => {
+      if (res?.ok) setData(res.data)
+      setLoading(false)
+    })
   }, [])
+
+  const stats = data?.stats ?? { students: 0, members: 0, roles: 0, pending: 0 }
+  const recentLeaves = data?.recentLeaves ?? []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {loading && (
+        <div style={{ color: 'var(--text-secondary)', fontSize: '14px', padding: '8px 0' }}>
+          Loading...
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <StatCard label="Total Students" value={stats.students} icon={<GraduationCap size={20} />} />
         <StatCard label="Total Members" value={stats.members} icon={<Users size={20} />} />
@@ -66,22 +64,10 @@ export default function AdminDashboardPage() {
         columns={[
           { key: 'student', label: 'Student Name', render: (item: Leave) => item.student?.name ?? '-' },
           { key: 'reason', label: 'Reason' },
-          {
-            key: 'fromDate',
-            label: 'From',
-            render: (item: Leave) => new Date(item.fromDate).toLocaleDateString(),
-          },
-          {
-            key: 'toDate',
-            label: 'To',
-            render: (item: Leave) => new Date(item.toDate).toLocaleDateString(),
-          },
+          { key: 'fromDate', label: 'From', render: (item: Leave) => new Date(item.fromDate).toLocaleDateString() },
+          { key: 'toDate', label: 'To', render: (item: Leave) => new Date(item.toDate).toLocaleDateString() },
           { key: 'status', label: 'Status', render: (item: Leave) => <StatusBadge status={item.status} /> },
-          {
-            key: 'assignedTo',
-            label: 'Assigned To',
-            render: (item: Leave) => item.assignedTo?.name ?? 'Unassigned',
-          },
+          { key: 'assignedTo', label: 'Assigned To', render: (item: Leave) => item.assignedTo?.name ?? 'Unassigned' },
         ]}
         data={recentLeaves}
         emptyMessage="No leave requests yet."

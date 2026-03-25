@@ -9,6 +9,7 @@
     "lint": "eslint",
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "create-college": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_college.ts",
+    "create-super-admin": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_super_admin.ts",
     "health:api": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/health_check.ts"
   },
   "dependencies": {

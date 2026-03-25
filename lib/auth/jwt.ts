@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 const SECRET = process.env.JWT_SECRET!
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!
 
-export type TokenUserType = 'ADMIN' | 'MEMBER' | 'STUDENT'
+export type TokenUserType = 'ADMIN' | 'MEMBER' | 'STUDENT' | 'SUPER'
 
 export interface JwtPayload {
   sub: string
