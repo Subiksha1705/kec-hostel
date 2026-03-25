@@ -43,14 +43,18 @@ const emptyForm: FormState = {
 }
 
 export default function MembersPage() {
-  const { data: members = [], loading: membersLoading, refresh: refreshMembers, fetchedAt } =
+  const { data: membersData, loading: membersLoading, refresh: refreshMembers, fetchedAt } =
     useCachedFetch<Member[]>('/api/members')
-  const { data: roles = [], loading: rolesLoading, refresh: refreshRoles } =
+  const { data: rolesData, loading: rolesLoading, refresh: refreshRoles } =
     useCachedFetch<Role[]>('/api/roles')
-  const { data: classes = [], loading: classesLoading, refresh: refreshClasses } =
+  const { data: classesData, loading: classesLoading, refresh: refreshClasses } =
     useCachedFetch<Option[]>('/api/classes')
-  const { data: hostels = [], loading: hostelsLoading, refresh: refreshHostels } =
+  const { data: hostelsData, loading: hostelsLoading, refresh: refreshHostels } =
     useCachedFetch<Option[]>('/api/hostels')
+  const members = membersData ?? []
+  const roles = rolesData ?? []
+  const classes = classesData ?? []
+  const hostels = hostelsData ?? []
   const loading = membersLoading || rolesLoading || classesLoading || hostelsLoading
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
@@ -62,6 +66,18 @@ export default function MembersPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast, showToast, clearToast } = useToast()
   const collegeDomain = typeof window !== 'undefined' ? localStorage.getItem('collegeDomain') : null
+
+  const fieldRowStyle = {
+    display: 'grid',
+    gridTemplateColumns: '150px 1fr',
+    gap: '12px',
+    alignItems: 'center',
+  } as const
+
+  const fieldLabelStyle = {
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+  } as const
 
   const handleRefresh = async () => {
     await Promise.all([refreshMembers(), refreshRoles(), refreshClasses(), refreshHostels()])
@@ -361,36 +377,12 @@ export default function MembersPage() {
 
           {addMode === 'manual' || form.id ? (
             <>
-              <input
-                placeholder="Name"
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface-2)',
-                }}
-              />
-              <input
-                placeholder="Email"
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-                disabled={Boolean(form.id)}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface-2)',
-                }}
-              />
-              {!form.id ? (
+              <label style={fieldRowStyle}>
+                <span style={fieldLabelStyle}>Name</span>
                 <input
-                  placeholder="Password"
-                  type="password"
-                  value={form.password}
-                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  placeholder="Name"
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
                   style={{
                     padding: '10px 12px',
                     borderRadius: 'var(--radius)',
@@ -398,58 +390,100 @@ export default function MembersPage() {
                     background: 'var(--surface-2)',
                   }}
                 />
+              </label>
+              <label style={fieldRowStyle}>
+                <span style={fieldLabelStyle}>Email</span>
+                <input
+                  placeholder="Email"
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm({ ...form, email: event.target.value })}
+                  disabled={Boolean(form.id)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                />
+              </label>
+              {!form.id ? (
+                <label style={fieldRowStyle}>
+                  <span style={fieldLabelStyle}>Password</span>
+                  <input
+                    placeholder="Password"
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => setForm({ ...form, password: event.target.value })}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface-2)',
+                    }}
+                  />
+                </label>
               ) : null}
-              <select
-                value={form.roleId}
-                onChange={(event) => setForm({ ...form, roleId: event.target.value })}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface-2)',
-                }}
-              >
-                <option value="">Select role</option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={form.classId}
-                onChange={(event) => setForm({ ...form, classId: event.target.value })}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface-2)',
-                }}
-              >
-                <option value="">No restriction (class)</option>
-                {classes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={form.hostelId}
-                onChange={(event) => setForm({ ...form, hostelId: event.target.value })}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface-2)',
-                }}
-              >
-                <option value="">No restriction (hostel)</option>
-                {hostels.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+              <label style={fieldRowStyle}>
+                <span style={fieldLabelStyle}>Role</span>
+                <select
+                  value={form.roleId}
+                  onChange={(event) => setForm({ ...form, roleId: event.target.value })}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <option value="">Select role</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={fieldRowStyle}>
+                <span style={fieldLabelStyle}>Class</span>
+                <select
+                  value={form.classId}
+                  onChange={(event) => setForm({ ...form, classId: event.target.value })}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <option value="">No restriction (class)</option>
+                  {classes.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={fieldRowStyle}>
+                <span style={fieldLabelStyle}>Hostel</span>
+                <select
+                  value={form.hostelId}
+                  onChange={(event) => setForm({ ...form, hostelId: event.target.value })}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <option value="">No restriction (hostel)</option>
+                  {hostels.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {error ? (
                 <div
                   style={{

@@ -36,7 +36,8 @@ const emptyPermissions: Permission[] = modules.map((module) => ({
 
 export default function RolesPage() {
   const router = useRouter()
-  const { data: roles = [], loading, refresh, fetchedAt } = useCachedFetch<Role[]>('/api/roles')
+  const { data, loading, refresh, fetchedAt } = useCachedFetch<Role[]>('/api/roles')
+  const roles = data ?? []
   const [isOpen, setIsOpen] = useState(false)
   const [newRoleName, setNewRoleName] = useState('')
   const [error, setError] = useState('')
@@ -48,7 +49,7 @@ export default function RolesPage() {
       setError('Role name is required')
       return
     }
-    const { res, data } = await apiJson<{ ok: boolean; error?: string }>('/api/roles', {
+    const { res, data } = await apiJson<{ ok: boolean; error?: string; data?: { id: string } }>('/api/roles', {
       method: 'POST',
       body: JSON.stringify({ name: newRoleName.trim() }),
     })
@@ -56,7 +57,7 @@ export default function RolesPage() {
       setError(data?.error ?? 'Failed to create role')
       return
     }
-    const roleId = data.data.id as string
+    const roleId = data.data?.id as string
     const payload = newPermissions.map((perm) => ({
       ...perm,
       canCreate: perm.canView ? perm.canCreate : false,

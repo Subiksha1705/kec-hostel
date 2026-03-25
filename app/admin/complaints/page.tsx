@@ -22,8 +22,8 @@ type Filter = (typeof filters)[number]
 
 export default function AdminComplaintsPage() {
   const [filter, setFilter] = useState<Filter>('ALL')
-  const { data: complaints = [], loading, refresh, fetchedAt } =
-    useCachedFetch<Complaint[]>('/api/complaints')
+  const { data, loading, refresh, fetchedAt } = useCachedFetch<Complaint[]>('/api/complaints')
+  const complaints = data ?? []
 
   const filteredComplaints = useMemo(() => {
     if (filter === 'ALL') return complaints

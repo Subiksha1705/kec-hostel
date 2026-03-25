@@ -142,6 +142,10 @@ export default function LoginPage() {
     setLoading(false)
 
     if (!res.ok || !data?.ok) {
+      if (res.status === 401) {
+        setError('Wrong credentials')
+        return
+      }
       setError(data?.error ?? 'Login failed')
       return
     }

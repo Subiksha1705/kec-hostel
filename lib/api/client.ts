@@ -9,7 +9,8 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     },
   })
 
-  if (res.status === 401) {
+  const isAuthRequest = path.startsWith('/api/auth/')
+  if (res.status === 401 && !isAuthRequest) {
     if (typeof window !== 'undefined') {
       localStorage.clear()
       window.location.href = '/login'

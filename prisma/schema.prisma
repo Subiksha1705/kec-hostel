@@ -165,10 +165,32 @@ model Student {
   email       String   @unique
   password    String
   rollNumber  String
+  phoneNumber String
+  department  String
+  year        String
+  roomNumber  String?
+  bedNumber   String?
+  gender      String
+  parentName  String
+  parentContact String
+  status      String
+  profileImage String
+  address     String
+  dateOfBirth DateTime
+  emergencyContactName String
+  emergencyContactNumber String
+  bloodGroup  String
+  checkInDate DateTime
+  checkOutDate DateTime
+  feeStatus   String
+  passOutYear Int
+  inYear      Int
+  idCardPdf   String
   collegeId   String
   classId     String?
   hostelId    String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   college     College    @relation(fields: [collegeId], references: [id])
   class       Class?     @relation(fields: [classId], references: [id])

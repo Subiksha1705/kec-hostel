@@ -23,10 +23,12 @@ const filters = ['ALL', 'PENDING', 'RESOLVED'] as const
 type Filter = (typeof filters)[number]
 
 export default function MemberComplaintsPage() {
-  const { data: complaints = [], loading: complaintsLoading, refresh: refreshComplaints, fetchedAt } =
+  const { data: complaintsData, loading: complaintsLoading, refresh: refreshComplaints, fetchedAt } =
     useCachedFetch<Complaint[]>('/api/complaints')
-  const { data: perms = [], loading: permsLoading, refresh: refreshPerms } =
+  const { data: permsData, loading: permsLoading, refresh: refreshPerms } =
     useCachedFetch<Permission[]>('/api/permissions')
+  const complaints = complaintsData ?? []
+  const perms = permsData ?? []
   const [filter, setFilter] = useState<Filter>('ALL')
   const canEdit = useMemo(
     () => perms.find((p) => p.module === 'complaints')?.canEdit ?? false,

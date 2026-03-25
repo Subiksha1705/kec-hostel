@@ -36,10 +36,12 @@ function getMyId(): string | null {
 }
 
 export default function MemberLeavesPage() {
-  const { data: leaves = [], loading: leavesLoading, refresh: refreshLeaves, fetchedAt } =
+  const { data: leavesData, loading: leavesLoading, refresh: refreshLeaves, fetchedAt } =
     useCachedFetch<Leave[]>('/api/leaves')
-  const { data: perms = [], loading: permsLoading, refresh: refreshPerms } =
+  const { data: permsData, loading: permsLoading, refresh: refreshPerms } =
     useCachedFetch<Permission[]>('/api/permissions')
+  const leaves = leavesData ?? []
+  const perms = permsData ?? []
   const [filter, setFilter] = useState<Filter>('ALL')
   const [myId, setMyId] = useState<string | null>(null)
   const canApprove = useMemo(

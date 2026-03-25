@@ -8,12 +8,34 @@ import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import Toast from '@/components/ui/Toast'
 import { useToast } from '@/lib/hooks/useToast'
+import PhoneInput from '@/components/ui/PhoneInput'
 
 type Student = {
   id: string
   name: string
   email: string
   rollNumber: string
+  phoneNumber: string
+  department: string
+  year: string
+  roomNumber?: string | null
+  bedNumber?: string | null
+  gender: string
+  parentName: string
+  parentContact: string
+  status: string
+  profileImage: string
+  address: string
+  dateOfBirth: string
+  emergencyContactName: string
+  emergencyContactNumber: string
+  bloodGroup: string
+  checkInDate: string
+  checkOutDate: string
+  feeStatus: string
+  passOutYear: number
+  inYear: number
+  idCardPdf: string
   class?: { id: string; name: string } | null
   hostel?: { id: string; name: string } | null
 }
@@ -28,6 +50,27 @@ type FormState = {
   email: string
   password: string
   rollNumber: string
+  phoneNumber: string
+  department: string
+  year: string
+  roomNumber: string
+  bedNumber: string
+  gender: string
+  parentName: string
+  parentContact: string
+  status: string
+  profileImage: string
+  address: string
+  dateOfBirth: string
+  emergencyContactName: string
+  emergencyContactNumber: string
+  bloodGroup: string
+  checkInDate: string
+  checkOutDate: string
+  feeStatus: string
+  passOutYear: string
+  inYear: string
+  idCardPdf: string
   classId: string
   hostelId: string
 }
@@ -37,23 +80,65 @@ const emptyForm: FormState = {
   email: '',
   password: '',
   rollNumber: '',
+  phoneNumber: '',
+  department: '',
+  year: '',
+  roomNumber: '',
+  bedNumber: '',
+  gender: '',
+  parentName: '',
+  parentContact: '',
+  status: '',
+  profileImage: '',
+  address: '',
+  dateOfBirth: '',
+  emergencyContactName: '',
+  emergencyContactNumber: '',
+  bloodGroup: '',
+  checkInDate: '',
+  checkOutDate: '',
+  feeStatus: '',
+  passOutYear: '',
+  inYear: '',
+  idCardPdf: '',
   classId: '',
   hostelId: '',
 }
 
+const toDateInput = (value?: string | null) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
+}
+
 export default function MemberStudentsPage() {
-  const { data: students = [], loading: studentsLoading, refresh: refreshStudents, fetchedAt } =
+  const { data: studentsData, loading: studentsLoading, refresh: refreshStudents, fetchedAt } =
     useCachedFetch<Student[]>('/api/students')
-  const { data: classes = [], loading: classesLoading, refresh: refreshClasses } =
+  const { data: classesData, loading: classesLoading, refresh: refreshClasses } =
     useCachedFetch<Option[]>('/api/classes')
-  const { data: hostels = [], loading: hostelsLoading, refresh: refreshHostels } =
+  const { data: hostelsData, loading: hostelsLoading, refresh: refreshHostels } =
     useCachedFetch<Option[]>('/api/hostels')
-  const { data: perms = [], loading: permsLoading, refresh: refreshPerms } =
+  const { data: permsData, loading: permsLoading, refresh: refreshPerms } =
     useCachedFetch<Permission[]>('/api/permissions')
+  const students = studentsData ?? []
+  const classes = classesData ?? []
+  const hostels = hostelsData ?? []
+  const perms = permsData ?? []
   const loading = studentsLoading || classesLoading || hostelsLoading || permsLoading
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
+  const fieldRowStyle = {
+    display: 'grid',
+    gridTemplateColumns: '150px 1fr',
+    gap: '12px',
+    alignItems: 'center',
+  } as const
+  const fieldLabelStyle = {
+    fontSize: '13px',
+    color: 'var(--text-secondary)',
+  } as const
   const studentPerm = useMemo(() => perms.find((p) => p.module === 'students'), [perms])
   const canCreate = studentPerm?.canCreate ?? false
   const canEdit = studentPerm?.canEdit ?? false
@@ -76,6 +161,27 @@ export default function MemberStudentsPage() {
       email: student.email,
       password: '',
       rollNumber: student.rollNumber,
+      phoneNumber: student.phoneNumber,
+      department: student.department,
+      year: student.year,
+      roomNumber: student.roomNumber ?? '',
+      bedNumber: student.bedNumber ?? '',
+      gender: student.gender,
+      parentName: student.parentName,
+      parentContact: student.parentContact,
+      status: student.status,
+      profileImage: student.profileImage,
+      address: student.address,
+      dateOfBirth: toDateInput(student.dateOfBirth),
+      emergencyContactName: student.emergencyContactName,
+      emergencyContactNumber: student.emergencyContactNumber,
+      bloodGroup: student.bloodGroup,
+      checkInDate: toDateInput(student.checkInDate),
+      checkOutDate: toDateInput(student.checkOutDate),
+      feeStatus: student.feeStatus,
+      passOutYear: String(student.passOutYear),
+      inYear: String(student.inYear),
+      idCardPdf: student.idCardPdf,
       classId: student.class?.id ?? '',
       hostelId: student.hostel?.id ?? '',
     })
@@ -85,8 +191,32 @@ export default function MemberStudentsPage() {
 
   const submit = async () => {
     setError('')
-    if (!form.name.trim() || !form.rollNumber.trim()) {
-      setError('Name and roll number are required')
+    const requiredFields = [
+      { label: 'Name', value: form.name },
+      { label: 'Roll number', value: form.rollNumber },
+      { label: 'Phone number', value: form.phoneNumber },
+      { label: 'Department', value: form.department },
+      { label: 'Year', value: form.year },
+      { label: 'Gender', value: form.gender },
+      { label: 'Parent name', value: form.parentName },
+      { label: 'Parent contact', value: form.parentContact },
+      { label: 'Status', value: form.status },
+      { label: 'Profile image', value: form.profileImage },
+      { label: 'Address', value: form.address },
+      { label: 'Date of birth', value: form.dateOfBirth },
+      { label: 'Emergency contact name', value: form.emergencyContactName },
+      { label: 'Emergency contact number', value: form.emergencyContactNumber },
+      { label: 'Blood group', value: form.bloodGroup },
+      { label: 'Check-in date', value: form.checkInDate },
+      { label: 'Check-out date', value: form.checkOutDate },
+      { label: 'Fee status', value: form.feeStatus },
+      { label: 'Pass out year', value: form.passOutYear },
+      { label: 'In year', value: form.inYear },
+      { label: 'ID card PDF', value: form.idCardPdf },
+    ]
+    const missing = requiredFields.find((field) => !field.value.trim())
+    if (missing) {
+      setError(`${missing.label} is required`)
       return
     }
     if (!form.id && !form.email.trim()) {
@@ -102,6 +232,27 @@ export default function MemberStudentsPage() {
     const payload: any = {
       name: form.name.trim(),
       rollNumber: form.rollNumber.trim(),
+      phoneNumber: form.phoneNumber.trim(),
+      department: form.department.trim(),
+      year: form.year.trim(),
+      roomNumber: form.roomNumber.trim() || null,
+      bedNumber: form.bedNumber.trim() || null,
+      gender: form.gender.trim(),
+      parentName: form.parentName.trim(),
+      parentContact: form.parentContact.trim(),
+      status: form.status.trim(),
+      profileImage: form.profileImage.trim(),
+      address: form.address.trim(),
+      dateOfBirth: form.dateOfBirth,
+      emergencyContactName: form.emergencyContactName.trim(),
+      emergencyContactNumber: form.emergencyContactNumber.trim(),
+      bloodGroup: form.bloodGroup.trim(),
+      checkInDate: form.checkInDate,
+      checkOutDate: form.checkOutDate,
+      feeStatus: form.feeStatus.trim(),
+      passOutYear: Number(form.passOutYear),
+      inYear: Number(form.inYear),
+      idCardPdf: form.idCardPdf.trim(),
       classId: form.classId || null,
       hostelId: form.hostelId || null,
     }
@@ -240,36 +391,12 @@ export default function MemberStudentsPage() {
         title={form.id ? 'Edit Student' : 'Add Student'}
       >
         <div style={{ display: 'grid', gap: '12px' }}>
-          <input
-            placeholder="Name"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-            }}
-          />
-          <input
-            placeholder="Email"
-            type="email"
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-            disabled={Boolean(form.id)}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-            }}
-          />
-          {!form.id ? (
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Name</span>
             <input
-              placeholder="Password"
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              placeholder="Name"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
               style={{
                 padding: '10px 12px',
                 borderRadius: 'var(--radius)',
@@ -277,52 +404,376 @@ export default function MemberStudentsPage() {
                 background: 'var(--surface-2)',
               }}
             />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Email</span>
+            <input
+              placeholder="Email"
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              disabled={Boolean(form.id)}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          {!form.id ? (
+            <label style={fieldRowStyle}>
+              <span style={fieldLabelStyle}>Password</span>
+              <input
+                placeholder="Password"
+                type="password"
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface-2)',
+                }}
+              />
+            </label>
           ) : null}
-          <input
-            placeholder="Roll Number"
-            value={form.rollNumber}
-            onChange={(event) => setForm({ ...form, rollNumber: event.target.value })}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-            }}
-          />
-          <select
-            value={form.classId}
-            onChange={(event) => setForm({ ...form, classId: event.target.value })}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-            }}
-          >
-            <option value="">No restriction (class)</option>
-            {classes.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={form.hostelId}
-            onChange={(event) => setForm({ ...form, hostelId: event.target.value })}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-            }}
-          >
-            <option value="">No restriction (hostel)</option>
-            {hostels.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Roll Number</span>
+            <input
+              placeholder="Roll Number"
+              value={form.rollNumber}
+              onChange={(event) => setForm({ ...form, rollNumber: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Phone Number</span>
+            <PhoneInput
+              value={form.phoneNumber}
+              onChange={(value) => setForm({ ...form, phoneNumber: value })}
+              placeholder="Phone Number"
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Department</span>
+            <input
+              placeholder="Department"
+              value={form.department}
+              onChange={(event) => setForm({ ...form, department: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Year</span>
+            <input
+              placeholder="Year"
+              value={form.year}
+              onChange={(event) => setForm({ ...form, year: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>In Year</span>
+            <input
+              placeholder="In Year"
+              type="number"
+              value={form.inYear}
+              onChange={(event) => setForm({ ...form, inYear: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Pass Out Year</span>
+            <input
+              placeholder="Pass Out Year"
+              type="number"
+              value={form.passOutYear}
+              onChange={(event) => setForm({ ...form, passOutYear: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Gender</span>
+            <input
+              placeholder="Gender"
+              value={form.gender}
+              onChange={(event) => setForm({ ...form, gender: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Parent Name</span>
+            <input
+              placeholder="Parent Name"
+              value={form.parentName}
+              onChange={(event) => setForm({ ...form, parentName: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Parent Contact</span>
+            <PhoneInput
+              value={form.parentContact}
+              onChange={(value) => setForm({ ...form, parentContact: value })}
+              placeholder="Parent Contact"
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Emergency Contact Name</span>
+            <input
+              placeholder="Emergency Contact Name"
+              value={form.emergencyContactName}
+              onChange={(event) => setForm({ ...form, emergencyContactName: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Emergency Contact Number</span>
+            <PhoneInput
+              value={form.emergencyContactNumber}
+              onChange={(value) => setForm({ ...form, emergencyContactNumber: value })}
+              placeholder="Emergency Contact Number"
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Blood Group</span>
+            <input
+              placeholder="Blood Group"
+              value={form.bloodGroup}
+              onChange={(event) => setForm({ ...form, bloodGroup: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Status</span>
+            <input
+              placeholder="Status"
+              value={form.status}
+              onChange={(event) => setForm({ ...form, status: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Fee Status</span>
+            <input
+              placeholder="Fee Status"
+              value={form.feeStatus}
+              onChange={(event) => setForm({ ...form, feeStatus: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Profile Image URL</span>
+            <input
+              placeholder="Profile Image URL"
+              value={form.profileImage}
+              onChange={(event) => setForm({ ...form, profileImage: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>ID Card PDF URL</span>
+            <input
+              placeholder="ID Card PDF URL"
+              value={form.idCardPdf}
+              onChange={(event) => setForm({ ...form, idCardPdf: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Room Number (optional)</span>
+            <input
+              placeholder="Room Number (optional)"
+              value={form.roomNumber}
+              onChange={(event) => setForm({ ...form, roomNumber: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Bed Number (optional)</span>
+            <input
+              placeholder="Bed Number (optional)"
+              value={form.bedNumber}
+              onChange={(event) => setForm({ ...form, bedNumber: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Date of Birth</span>
+            <input
+              placeholder="Date of Birth"
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(event) => setForm({ ...form, dateOfBirth: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Check-in Date</span>
+            <input
+              placeholder="Check-in Date"
+              type="date"
+              value={form.checkInDate}
+              onChange={(event) => setForm({ ...form, checkInDate: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Check-out Date</span>
+            <input
+              placeholder="Check-out Date"
+              type="date"
+              value={form.checkOutDate}
+              onChange={(event) => setForm({ ...form, checkOutDate: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={{ ...fieldRowStyle, alignItems: 'start' }}>
+            <span style={{ ...fieldLabelStyle, paddingTop: '8px' }}>Address</span>
+            <textarea
+              placeholder="Address"
+              value={form.address}
+              onChange={(event) => setForm({ ...form, address: event.target.value })}
+              rows={3}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            />
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Class</span>
+            <select
+              value={form.classId}
+              onChange={(event) => setForm({ ...form, classId: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            >
+              <option value="">No restriction (class)</option>
+              {classes.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={fieldRowStyle}>
+            <span style={fieldLabelStyle}>Hostel</span>
+            <select
+              value={form.hostelId}
+              onChange={(event) => setForm({ ...form, hostelId: event.target.value })}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+              }}
+            >
+              <option value="">No restriction (hostel)</option>
+              {hostels.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
           {error ? (
             <div
               style={{

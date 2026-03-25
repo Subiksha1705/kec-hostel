@@ -20,7 +20,8 @@ type Leave = {
 }
 
 export default function StudentLeavesPage() {
-  const { data: leaves = [], loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
+  const { data, loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
+  const leaves = data ?? []
   const [isOpen, setIsOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [fromDate, setFromDate] = useState('')

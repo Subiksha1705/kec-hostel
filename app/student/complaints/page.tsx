@@ -17,8 +17,9 @@ type Complaint = {
 }
 
 export default function StudentComplaintsPage() {
-  const { data: complaints = [], loading, refresh, fetchedAt } =
+  const { data, loading, refresh, fetchedAt } =
     useCachedFetch<Complaint[]>('/api/complaints')
+  const complaints = data ?? []
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')

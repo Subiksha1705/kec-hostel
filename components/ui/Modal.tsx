@@ -11,6 +11,7 @@ type ModalProps = {
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const contentRef = useRef<HTMLDivElement | null>(null)
   const onCloseRef = useRef(onClose)
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     )
 
     focusable?.[0]?.focus()
+    contentRef.current?.scrollTo({ top: 0 })
 
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -71,11 +73,15 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
         onMouseDown={(event) => event.stopPropagation()}
         style={{
           width: 'min(560px, 100%)',
+          maxHeight: 'calc(100vh - 48px)',
           background: 'var(--surface)',
           borderRadius: 'var(--radius-lg)',
           boxShadow: 'var(--shadow-md)',
           border: '1px solid var(--border)',
           padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -102,7 +108,16 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             ×
           </button>
         </div>
-        <div style={{ marginTop: '16px' }}>{children}</div>
+        <div
+          ref={contentRef}
+          style={{
+            marginTop: '16px',
+            overflowY: 'auto',
+            paddingRight: '4px',
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   )

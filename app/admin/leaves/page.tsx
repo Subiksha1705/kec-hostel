@@ -30,10 +30,12 @@ export default function AdminLeavesPage() {
   const [filter, setFilter] = useState<Filter>('ALL')
   const [assigning, setAssigning] = useState<Leave | null>(null)
   const [memberId, setMemberId] = useState('')
-  const { data: leaves = [], loading: leavesLoading, refresh: refreshLeaves, fetchedAt } =
+  const { data: leavesData, loading: leavesLoading, refresh: refreshLeaves, fetchedAt } =
     useCachedFetch<Leave[]>('/api/leaves')
-  const { data: members = [], refresh: refreshMembers } =
+  const { data: membersData, refresh: refreshMembers } =
     useCachedFetch<Member[]>('/api/members')
+  const leaves = leavesData ?? []
+  const members = membersData ?? []
 
   const loading = leavesLoading
 

@@ -9,6 +9,27 @@ import { assertScope } from '@/lib/scope'
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   rollNumber: z.string().min(1).optional(),
+  phoneNumber: z.string().min(1).optional(),
+  department: z.string().min(1).optional(),
+  year: z.string().min(1).optional(),
+  roomNumber: z.string().min(1).optional().nullable(),
+  bedNumber: z.string().min(1).optional().nullable(),
+  gender: z.string().min(1).optional(),
+  parentName: z.string().min(1).optional(),
+  parentContact: z.string().min(1).optional(),
+  status: z.string().min(1).optional(),
+  profileImage: z.string().min(1).optional(),
+  address: z.string().min(1).optional(),
+  dateOfBirth: z.coerce.date().optional(),
+  emergencyContactName: z.string().min(1).optional(),
+  emergencyContactNumber: z.string().min(1).optional(),
+  bloodGroup: z.string().min(1).optional(),
+  checkInDate: z.coerce.date().optional(),
+  checkOutDate: z.coerce.date().optional(),
+  feeStatus: z.string().min(1).optional(),
+  passOutYear: z.coerce.number().int().optional(),
+  inYear: z.coerce.number().int().optional(),
+  idCardPdf: z.string().min(1).optional(),
   classId: z.string().uuid().nullable().optional(),
   hostelId: z.string().uuid().nullable().optional(),
 })
@@ -37,6 +58,8 @@ export async function PUT(
     const raw = await req.json()
     const body = updateSchema.parse({
       ...raw,
+      roomNumber: raw.roomNumber ?? null,
+      bedNumber: raw.bedNumber ?? null,
       classId: raw.classId || null,
       hostelId: raw.hostelId || null,
     })
