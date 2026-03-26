@@ -15,9 +15,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.parse(await req.json())
 
-    const superEmail = process.env.SUPER_ADMIN_EMAIL
-    if (!superEmail) return err('Super admin is not configured', 500)
-    if (body.email.toLowerCase() !== superEmail.toLowerCase()) {
+    const rawList = process.env.SUPER_ADMIN_EMAILS
+    const single = process.env.SUPER_ADMIN_EMAIL
+    const superEmails = (rawList ? rawList.split(/[,\s]+/) : [])
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+    if (single) superEmails.push(single.toLowerCase())
+
+    if (superEmails.length === 0) return err('Super admin is not configured', 500)
+    if (!superEmails.includes(body.email.toLowerCase())) {
       return err('Invalid credentials', 401)
     }
 

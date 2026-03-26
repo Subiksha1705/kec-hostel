@@ -1,0 +1,65 @@
+name: Create Super Admin (Prod)
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Super admin email (must be included in SUPER_ADMIN_EMAILS or SUPER_ADMIN_EMAIL)
+        required: true
+        type: string
+      password:
+        description: Password to set for this super admin (visible in Actions logs)
+        required: true
+        type: string
+      name:
+        description: Display name
+        required: false
+        default: Super Admin
+        type: string
+      college_id:
+        description: Existing college id (optional)
+        required: false
+        type: string
+      college_name:
+        description: College name if creating a new one
+        required: false
+        default: Super Admin College
+        type: string
+      college_location:
+        description: College location if creating a new one
+        required: false
+        default: System
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn prisma generate
+      - name: Add super admin with existing college
+        if: ${{ inputs.college_id != '' }}
+        run: >
+          yarn create-super-admin --
+          --email "${{ inputs.email }}"
+          --password "${{ inputs.password }}"
+          --name "${{ inputs.name }}"
+          --college-id "${{ inputs.college_id }}"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      - name: Add super admin with new college
+        if: ${{ inputs.college_id == '' }}
+        run: >
+          yarn create-super-admin --
+          --email "${{ inputs.email }}"
+          --password "${{ inputs.password }}"
+          --name "${{ inputs.name }}"
+          --college-name "${{ inputs.college_name }}"
+          --college-location "${{ inputs.college_location }}"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}

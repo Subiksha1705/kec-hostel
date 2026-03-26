@@ -2,7 +2,7 @@ import 'dotenv/config'
 import prisma from '../lib/prisma'
 
 function usage() {
-  console.log('Usage: npm run create-college -- --name "College Name" --location "City" [--domain "example.edu"]')
+  console.log('Usage: yarn create-college -- --name "College Name" --location "City" [--domain "example.edu"]')
 }
 
 function getArg(flag: string) {

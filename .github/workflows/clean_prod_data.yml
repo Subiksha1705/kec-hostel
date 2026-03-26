@@ -1,0 +1,38 @@
+name: Clean Production Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type DELETE to confirm data cleanup
+        required: true
+        type: string
+      allow_empty_super:
+        description: Allow cleanup even if no SUPER_ADMIN_EMAIL(S) is configured
+        required: false
+        default: "false"
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        if: ${{ inputs.confirm != 'DELETE' }}
+        run: |
+          echo "Confirmation failed. Type DELETE to proceed."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn prisma generate
+      - run: yarn clean-prod-data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          CONFIRM_CLEAN: "1"
+          ALLOW_EMPTY_SUPER: ${{ inputs.allow_empty_super }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+          SUPER_ADMIN_EMAILS: ${{ secrets.SUPER_ADMIN_EMAILS }}

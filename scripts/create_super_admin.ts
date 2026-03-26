@@ -3,8 +3,14 @@ import { hashPassword } from '../lib/auth/password'
 
 let prisma: typeof import('../lib/prisma').default | null = null
 
+const DEFAULT_SUPER_EMAIL = ''
+const DEFAULT_SUPER_PASSWORD = ''
+const DEFAULT_SUPER_NAME = 'Super Admin'
+const DEFAULT_COLLEGE_NAME = 'Super Admin College'
+const DEFAULT_COLLEGE_LOCATION = 'System'
+
 function usage() {
-  console.log('Usage: npm run create-super-admin -- --email "admin@example.com" --password "secret" [--name "Super Admin"] [--college-id "uuid"] [--college-name "Super College"] [--college-location "City"]')
+  console.log('Usage: yarn create-super-admin -- --email "admin@example.com" --password "secret" [--name "Super Admin"] [--college-id "uuid"] [--college-name "Super College"] [--college-location "City"]')
 }
 
 function getArg(flag: string) {
@@ -21,12 +27,12 @@ async function main() {
   const prismaModule = await import('../lib/prisma')
   prisma = prismaModule.default
 
-  const email = getArg('--email')
-  const password = getArg('--password')
-  const name = getArg('--name') ?? 'Super Admin'
+  const email = getArg('--email') ?? DEFAULT_SUPER_EMAIL
+  const password = getArg('--password') ?? DEFAULT_SUPER_PASSWORD
+  const name = getArg('--name') ?? DEFAULT_SUPER_NAME
   const collegeId = getArg('--college-id')
-  const collegeName = getArg('--college-name') ?? 'Super Admin College'
-  const collegeLocation = getArg('--college-location') ?? 'System'
+  const collegeName = getArg('--college-name') ?? DEFAULT_COLLEGE_NAME
+  const collegeLocation = getArg('--college-location') ?? DEFAULT_COLLEGE_LOCATION
 
   if (!email || !password) {
     usage()

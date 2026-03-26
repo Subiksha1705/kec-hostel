@@ -498,7 +498,7 @@ model RolePermission {
 
 Run migration:
 ```bash
-npx prisma migrate dev --name add_can_approve
+yarn prisma migrate dev --name add_can_approve
 ```
 
 ### Update `app/api/roles/[id]/permissions/route.ts` — include canApprove
@@ -981,7 +981,7 @@ export default function Toast({ message, variant = 'success', onClose }: ToastPr
 ## Execution order for Codex
 
 1. `prisma/schema.prisma` — add `canApprove` field to `RolePermission`
-2. Run: `npx prisma migrate dev --name add_can_approve`
+2. Run: `yarn prisma migrate dev --name add_can_approve`
 3. `lib/prisma.ts` — singleton fix
 4. `next.config.ts` — add `serverExternalPackages`
 5. `components/ui/Toast.tsx` — replace with variant-aware version

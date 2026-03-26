@@ -49,7 +49,7 @@ Also remove from `devDependencies` if present:
 
 After editing, run:
 ```bash
-npm install
+yarn install
 ```
 
 ### 1c. Create `lib/prisma.ts`
@@ -335,8 +335,8 @@ DATABASE_URL="postgresql://user:password@localhost:5432/kec_hostel"
 
 Then run:
 ```bash
-npx prisma migrate dev --name init_mvp_schema
-npx prisma generate
+yarn prisma migrate dev --name init_mvp_schema
+yarn prisma generate
 ```
 
 ---
@@ -347,8 +347,8 @@ npx prisma generate
 
 Run:
 ```bash
-npm install bcryptjs jsonwebtoken zod
-npm install --save-dev @types/bcryptjs @types/jsonwebtoken
+yarn add bcryptjs jsonwebtoken zod
+yarn add -D @types/bcryptjs @types/jsonwebtoken
 ```
 
 ---
@@ -1500,12 +1500,12 @@ Add to `package.json` scripts:
 
 Run with:
 ```bash
-npx prisma db seed
+yarn prisma db seed
 ```
 
 Or directly:
 ```bash
-npm run seed
+yarn seed
 ```
 
 ---
@@ -1583,7 +1583,7 @@ prisma/
 ```
 [ ] Step 1  — Delete lib/db.ts, delete app/api/test/route.ts, remove pg from package.json, create lib/prisma.ts
 [ ] Step 2  — Replace prisma/schema.prisma fully, run prisma migrate dev, run prisma generate
-[ ] Step 3  — npm install bcryptjs jsonwebtoken zod + types
+[ ] Step 3  — yarn add bcryptjs jsonwebtoken zod + types
 [ ] Step 4  — Create lib/auth/password.ts, lib/auth/jwt.ts, lib/auth/session.ts, lib/api/response.ts
 [ ] Step 5  — Create lib/rbac.ts, lib/scope.ts
 [ ] Step 6  — Create all 4 auth routes (admin login, admin register, member login, student login)

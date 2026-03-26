@@ -27,7 +27,7 @@ model Announcement {
 
 Run after adding:
 ```bash
-npx prisma migrate dev --name add_announcements
+yarn prisma migrate dev --name add_announcements
 ```
 
 ---

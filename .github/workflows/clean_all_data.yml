@@ -1,0 +1,31 @@
+name: Clean All Data (Including Super Admins)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type DELETE_ALL to confirm full wipe (including super admins)
+        required: true
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        if: ${{ inputs.confirm != 'DELETE_ALL' }}
+        run: |
+          echo "Confirmation failed. Type DELETE_ALL to proceed."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn prisma generate
+      - run: yarn clean-all-data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          CONFIRM_CLEAN: "1"
+          ALLOW_DELETE_SUPER: "YES"

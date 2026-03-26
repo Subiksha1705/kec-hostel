@@ -525,7 +525,7 @@ export default function AdminLayout({ children }) {
 ## Install Required Packages
 
 ```bash
-npm install lucide-react
+yarn add lucide-react
 ```
 
 No other new packages needed. Do not install shadcn, radix, or any component library — build all UI from scratch using Tailwind and inline styles with the CSS variables defined above.

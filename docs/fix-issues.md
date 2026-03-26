@@ -753,10 +753,10 @@ model Hostel {
 **5.2** Run the migration:
 
 ```bash
-npx prisma migrate dev --name add_hostel_info_fields
+yarn prisma migrate dev --name add_hostel_info_fields
 ```
 
-**5.3** Run `npx prisma generate` to regenerate the Prisma client.
+**5.3** Run `yarn prisma generate` to regenerate the Prisma client.
 
 ---
 

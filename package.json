@@ -10,6 +10,8 @@
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "create-college": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_college.ts",
     "create-super-admin": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_super_admin.ts",
+    "clean-prod-data": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/clean_prod_data.ts",
+    "clean-all-data": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/clean_all_data.ts",
     "create-test-setup": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_test_setup.ts",
     "create-full-setup": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create_full_setup.ts",
     "health:api": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/health_check.ts"

@@ -75,8 +75,8 @@ model College {
 Create and run the migration:
 
 ```bash
-npx prisma migrate dev --name add_chatbot_knowledge_base
-npx prisma generate
+yarn prisma migrate dev --name add_chatbot_knowledge_base
+yarn prisma generate
 ```
 
 ---
@@ -165,8 +165,8 @@ export async function parseFileToText(
 Install required packages:
 
 ```bash
-npm install pdf-parse mammoth
-npm install --save-dev @types/pdf-parse
+yarn add pdf-parse mammoth
+yarn add -D @types/pdf-parse
 ```
 
 (`xlsx` is already a dependency.)
@@ -1246,8 +1246,8 @@ export const config = {
 ## 14. Package Installs Summary
 
 ```bash
-npm install pdf-parse mammoth
-npm install --save-dev @types/pdf-parse
+yarn add pdf-parse mammoth
+yarn add -D @types/pdf-parse
 ```
 
 (`xlsx`, `zod`, `lucide-react` are already installed.)

@@ -81,7 +81,7 @@ model Announcement {
 Run migration:
 
 ```bash
-npx prisma migrate dev --name add-rich-announcements
+yarn prisma migrate dev --name add-rich-announcements
 ```
 
 ---
