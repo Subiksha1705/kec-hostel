@@ -11,7 +11,6 @@ type HostelInfo = {
   capacity: number
   description: string | null
   rules: string | null
-  chatbotContext?: string | null
 }
 
 const emptyForm: HostelInfo = {
@@ -20,7 +19,6 @@ const emptyForm: HostelInfo = {
   capacity: 0,
   description: '',
   rules: '',
-  chatbotContext: '',
 }
 
 export default function AdminHostelInfoPage() {
@@ -38,7 +36,6 @@ export default function AdminHostelInfoPage() {
       capacity: hostelInfo.capacity ?? 0,
       description: hostelInfo.description ?? '',
       rules: hostelInfo.rules ?? '',
-      chatbotContext: hostelInfo.chatbotContext ?? '',
     })
   }, [hostelInfo])
 
@@ -51,7 +48,6 @@ export default function AdminHostelInfoPage() {
       capacity: Number(form.capacity) || 0,
       description: form.description ?? '',
       rules: form.rules ?? '',
-      chatbotContext: form.chatbotContext ?? '',
     }
     const { res } = await apiJson('/api/hostel-info', {
       method: 'PUT',
@@ -149,25 +145,6 @@ export default function AdminHostelInfoPage() {
               resize: 'vertical',
             }}
           />
-        </div>
-        <div style={{ display: 'grid', gap: '6px' }}>
-          <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Chatbot Context</label>
-          <textarea
-            rows={9}
-            value={form.chatbotContext ?? ''}
-            onChange={(event) => setForm((f) => ({ ...f, chatbotContext: event.target.value }))}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-              resize: 'vertical',
-            }}
-          />
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            This text is used as knowledge for the chatbot. Write hostel rules, FAQs, timings, and any
-            information students commonly ask about.
-          </div>
         </div>
         {success ? (
           <div

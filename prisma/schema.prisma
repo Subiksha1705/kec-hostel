@@ -50,6 +50,14 @@ enum FeeStatus {
   OVERDUE
 }
 
+// ─── CHATBOT KNOWLEDGE BASE ──────────────────────────────────────────────────
+
+enum KnowledgeSourceType {
+  TEXT
+  FILE
+  URL
+}
+
 
 // ─── COLLEGE ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +76,7 @@ model College {
   classes     Class[]
   roles       Role[]
   gallery     Gallery[]
+  knowledgeSources  ChatbotKnowledgeSource[]
 }
 
 
@@ -182,6 +191,25 @@ model Hostel {
   college   College       @relation(fields: [collegeId], references: [id])
   students  Student[]
   members   AdminMember[]
+}
+
+// ─── CHATBOT KNOWLEDGE BASE ──────────────────────────────────────────────────
+
+model ChatbotKnowledgeSource {
+  id          String              @id @default(uuid())
+  collegeId   String
+  type        KnowledgeSourceType
+  label       String
+  content     String              @db.Text
+  sourceUrl   String?
+  fileName    String?
+  fileMime    String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  college     College             @relation(fields: [collegeId], references: [id])
+
+  @@index([collegeId])
 }
 
 

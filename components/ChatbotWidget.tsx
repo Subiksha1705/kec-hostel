@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { apiJson } from '@/lib/api/client'
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string }
+type ChatMessage = { role: 'user' | 'model'; parts: { text: string }[] }
 
 export default function ChatbotWidget() {
   const [open, setOpen] = useState(false)
@@ -12,12 +12,13 @@ export default function ChatbotWidget() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const greetedRef = useRef(false)
 
   const send = async () => {
     const text = input.trim()
     if (!text || loading) return
 
-    const newMessages = [...messages, { role: 'user' as const, content: text }]
+    const newMessages = [...messages, { role: 'user' as const, parts: [{ text }] }]
     setMessages(newMessages)
     setInput('')
     setLoading(true)
@@ -31,13 +32,23 @@ export default function ChatbotWidget() {
     })
 
     const reply = data?.data?.reply ?? 'Sorry, something went wrong. Please try again.'
-    setMessages([...newMessages, { role: 'assistant', content: reply }])
+    setMessages([...newMessages, { role: 'model', parts: [{ text: reply }] }])
     setLoading(false)
   }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (greetedRef.current) return
+    const storedName =
+      typeof window !== 'undefined' ? window.localStorage.getItem('userName') : null
+    const name = storedName && storedName.trim() ? storedName.trim() : 'there'
+    const greeting = `Hello ${name}! How can I help you with hostel info today?`
+    setMessages([{ role: 'model', parts: [{ text: greeting }] }])
+    greetedRef.current = true
+  }, [])
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -108,13 +119,16 @@ export default function ChatbotWidget() {
                 Hi! Ask me anything about your hostel — timings, rules, facilities, or procedures.
               </p>
             )}
-            {messages.map((msg, i) => (
+            {messages.map((msg, i) => {
+              const content = msg.parts.map((p) => p.text).join('')
+              const isUser = msg.role === 'user'
+              return (
               <div
                 key={i}
                 style={{
-                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  background: msg.role === 'user' ? 'var(--sage-light)' : 'var(--surface-2)',
-                  color: msg.role === 'user' ? 'var(--sage-dark)' : 'var(--text-primary)',
+                  alignSelf: isUser ? 'flex-end' : 'flex-start',
+                  background: isUser ? 'var(--sage-light)' : 'var(--surface-2)',
+                  color: isUser ? 'var(--sage-dark)' : 'var(--text-primary)',
                   padding: '8px 12px',
                   borderRadius: '12px',
                   maxWidth: '80%',
@@ -122,9 +136,9 @@ export default function ChatbotWidget() {
                   lineHeight: 1.5,
                 }}
               >
-                {msg.content}
+                {content}
               </div>
-            ))}
+            )})}
             {loading && (
               <div style={{ alignSelf: 'flex-start', color: 'var(--text-secondary)', fontSize: '13px' }}>
                 Typing...

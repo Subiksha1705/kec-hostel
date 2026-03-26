@@ -4,7 +4,9 @@ import ResizableSidebarShell from '@/components/layout/ResizableSidebarShell'
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard allowedType="MEMBER">
-      <ResizableSidebarShell userType="MEMBER">{children}</ResizableSidebarShell>
+      <ResizableSidebarShell userType="MEMBER" showChatbot>
+        {children}
+      </ResizableSidebarShell>
     </AuthGuard>
   )
 }

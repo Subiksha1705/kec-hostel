@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck, MessageSquare, Building, School, Megaphone } from 'lucide-react'
+import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck, MessageSquare, Building, School, Megaphone, Bot } from 'lucide-react'
 import { apiJson } from '@/lib/api/client'
 import { cache } from '@/lib/cache'
 
@@ -77,6 +77,7 @@ export default function Sidebar({ userType, width }: { userType: UserType; width
         { href: '/admin/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
         { href: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={18} /> },
         { href: '/admin/hostel-info', label: 'Hostel Info', icon: <Building size={18} /> },
+        { href: '/admin/chatbot', label: 'Chatbot Context', icon: <Bot size={18} /> },
       ]
     }
     if (userType === 'MEMBER') {
