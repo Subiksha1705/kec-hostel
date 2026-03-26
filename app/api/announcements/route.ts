@@ -14,8 +14,6 @@ const createSchema = z.object({
   imageHeight: z.number().int().positive().optional().nullable(),
   linkUrl: z.string().url().optional().nullable(),
   linkLabel: z.string().min(1).optional().nullable(),
-  postedBy: z.string().min(1),
-  role: z.string().min(1),
   isPinned: z.boolean().optional().default(false),
   isActive: z.boolean().optional().default(true),
 })
@@ -69,6 +67,24 @@ export async function POST(req: NextRequest) {
       linkLabel: raw.linkLabel || null,
     })
 
+    let postedBy = 'Unknown'
+    let role = 'Admin'
+
+    if (session.type === 'MEMBER') {
+      const member = await prisma.adminMember.findUnique({
+        where: { id: session.sub },
+        include: { role: true },
+      })
+      if (!member) return err('Unauthorized', 401)
+      postedBy = `${member.name} (${member.email})`
+      role = member.role?.name ?? 'Member'
+    } else {
+      const admin = await prisma.admin.findUnique({ where: { id: session.sub } })
+      if (!admin) return err('Unauthorized', 401)
+      postedBy = `${admin.name} (${admin.email})`
+      role = session.type === 'SUPER' ? 'Super Admin' : 'Admin'
+    }
+
     const announcement = await prisma.announcement.create({
       data: {
         title: body.title,
@@ -79,8 +95,8 @@ export async function POST(req: NextRequest) {
         imageHeight: body.imageHeight ?? null,
         linkUrl: body.linkUrl,
         linkLabel: body.linkLabel,
-        postedBy: body.postedBy,
-        role: body.role,
+        postedBy,
+        role,
         isPinned: body.isPinned ?? false,
         isActive: body.isActive ?? true,
       },

@@ -14,8 +14,6 @@ const updateSchema = z.object({
   imageHeight: z.number().int().positive().optional().nullable(),
   linkUrl: z.string().url().optional().nullable(),
   linkLabel: z.string().optional().nullable(),
-  postedBy: z.string().min(1).optional(),
-  role: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
   isPinned: z.boolean().optional(),
 })

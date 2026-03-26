@@ -15,8 +15,6 @@ type FormState = {
   imageHeight: number | null
   linkUrl: string
   linkLabel: string
-  postedBy: string
-  role: string
   isPinned: boolean
   isActive: boolean
 }
@@ -30,8 +28,6 @@ const emptyForm: FormState = {
   imageHeight: 240,
   linkUrl: '',
   linkLabel: '',
-  postedBy: '',
-  role: 'Admin',
   isPinned: false,
   isActive: true,
 }
@@ -46,6 +42,7 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [posterLabel, setPosterLabel] = useState('Admin')
 
   const isEdit = !!editData?.id
 
@@ -53,6 +50,14 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
     setForm({ ...emptyForm, ...editData })
   }, [editData])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const name = localStorage.getItem('userName') || 'Admin'
+    const roleName = localStorage.getItem('userRoleName')
+    const type = localStorage.getItem('userType')
+    const roleLabel = type === 'SUPER' ? 'Super Admin' : roleName || 'Admin'
+    setPosterLabel(`${name} • ${roleLabel}`)
+  }, [])
   useEffect(() => {
     if (!success) return
     const timer = setTimeout(() => setSuccess(null), 3000)
@@ -72,8 +77,8 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
     setSuccess(null)
 
     const plainText = form.description.replace(/<[^>]+>/g, '').trim()
-    if (!form.title.trim() || !plainText || !form.postedBy.trim()) {
-      setError('Title, description, and posted by are required.')
+    if (!form.title.trim() || !plainText) {
+      setError('Title and description are required.')
       return
     }
 
@@ -93,8 +98,6 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
         imageHeight: form.imageHeight || null,
         linkUrl: form.linkUrl.trim() || null,
         linkLabel: form.linkLabel.trim() || null,
-        postedBy: form.postedBy.trim(),
-        role: form.role.trim(),
         isPinned: form.isPinned,
         isActive: mode === 'publish',
       }),
@@ -148,6 +151,11 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
             placeholder="Write the announcement details..."
           />
         </div>
+      </div>
+
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm">
+        <span className="text-[var(--text-secondary)]">Posting as:</span>{' '}
+        <span className="font-semibold">{posterLabel}</span>
       </div>
 
       <div>
@@ -216,33 +224,6 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
             onChange={(event) => update('linkLabel', event.target.value)}
             placeholder="Learn More"
           />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-sm font-semibold">Posted By *</label>
-          <input
-            className="mt-1 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm"
-            value={form.postedBy}
-            onChange={(event) => update('postedBy', event.target.value)}
-            placeholder="Name"
-            required
-          />
-        </div>
-        <div>
-          <label className="text-sm font-semibold">Role</label>
-          <select
-            className="mt-1 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm"
-            value={form.role}
-            onChange={(event) => update('role', event.target.value)}
-          >
-            <option>Admin</option>
-            <option>Chief Warden</option>
-            <option>Warden</option>
-            <option>Hostel Staff</option>
-            <option>Staff</option>
-          </select>
         </div>
       </div>
 

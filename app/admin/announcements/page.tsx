@@ -78,8 +78,6 @@ export default function AdminAnnouncementsPage() {
                   imageHeight: editItem.imageHeight ?? null,
                   linkUrl: editItem.linkUrl ?? '',
                   linkLabel: editItem.linkLabel ?? '',
-                  postedBy: editItem.postedBy,
-                  role: editItem.role,
                   isPinned: editItem.isPinned,
                 }
               : undefined
