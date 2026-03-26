@@ -11,11 +11,9 @@ const updateSchema = z.object({
   sourceUrl: z.string().url().optional(),
 })
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params
+export async function GET(req: NextRequest) {
+  const id = req.nextUrl.pathname.split('/').pop() ?? ''
+  if (!id) return err('Not found', 404)
   const session = getSession(req)
   if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
@@ -28,11 +26,9 @@ export async function GET(
   return ok({ source })
 }
 
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params
+export async function DELETE(req: NextRequest) {
+  const id = req.nextUrl.pathname.split('/').pop() ?? ''
+  if (!id) return err('Not found', 404)
   const session = getSession(req)
   if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
@@ -46,11 +42,9 @@ export async function DELETE(
   return ok({ deleted: true })
 }
 
-export async function PUT(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params
+export async function PUT(req: NextRequest) {
+  const id = req.nextUrl.pathname.split('/').pop() ?? ''
+  if (!id) return err('Not found', 404)
   const session = getSession(req)
   if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
