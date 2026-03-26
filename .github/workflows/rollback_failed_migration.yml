@@ -1,0 +1,19 @@
+name: Rollback Failed Migration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn prisma generate
+      - run: yarn prisma migrate resolve --rolled-back "20260326133000_strong_schema_updates"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
