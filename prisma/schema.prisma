@@ -25,6 +25,31 @@ enum ComplaintStatus {
   CANCELLED
 }
 
+enum LeaveType {
+  SICK
+  PERSONAL
+  EMERGENCY
+  OD
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  PASSED_OUT
+}
+
+enum FeeStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
+
 
 // ─── COLLEGE ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +145,8 @@ model AdminMember {
 
   assignedLeaves  Leave[] @relation("AssignedTo")
   reviewedLeaves  Leave[] @relation("ReviewedBy")
+  facultyStudents StudentFaculty[]
+  assignedComplaints Complaint[]
 }
 
 
@@ -172,22 +199,22 @@ model Student {
   year        String
   roomNumber  String?
   bedNumber   String?
-  gender      String
+  gender      Gender
   parentName  String
   parentContact String
-  status      String
-  profileImage String
+  status      StudentStatus
+  profileImage String?
   address     String
   dateOfBirth DateTime
   emergencyContactName String
   emergencyContactNumber String
   bloodGroup  String
   checkInDate DateTime
-  checkOutDate DateTime
-  feeStatus   String
+  checkOutDate DateTime?
+  feeStatus   FeeStatus
   passOutYear Int
   inYear      Int
-  idCardPdf   String
+  idCardPdf   String?
   collegeId   String
   classId     String?
   hostelId    String?
@@ -201,6 +228,11 @@ model Student {
   leaves      Leave[]
   complaints  Complaint[]
   reviews     Review[]
+  facultyInCharge StudentFaculty[]
+
+  @@index([collegeId])
+  @@index([classId])
+  @@index([hostelId])
 }
 
 
@@ -230,19 +262,30 @@ model Announcement {
 model Leave {
   id           String      @id @default(uuid())
   studentId    String
+  collegeId    String
+
+  leaveType    LeaveType   @default(PERSONAL)
+  title        String?
   reason       String
   fromDate     DateTime
   toDate       DateTime
+  totalDays    Int         @default(1)
+  documentUrl  String?
   status       LeaveStatus @default(PENDING)
   assignedToId String?
   reviewedById String?
   reviewedAt   DateTime?
-  collegeId    String
+  reviewerComment String?
   createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   student      Student      @relation(fields: [studentId], references: [id])
   assignedTo   AdminMember? @relation("AssignedTo", fields: [assignedToId], references: [id])
   reviewedBy   AdminMember? @relation("ReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([studentId])
+  @@index([collegeId])
+  @@index([status])
 }
 
 
@@ -255,9 +298,23 @@ model Complaint {
   title       String
   description String
   status      ComplaintStatus @default(PENDING)
+  assignedToId String?
   createdAt   DateTime        @default(now())
 
   student     Student         @relation(fields: [studentId], references: [id])
+  assignedTo  AdminMember?    @relation(fields: [assignedToId], references: [id])
+}
+
+model StudentFaculty {
+  id        String   @id @default(uuid())
+  studentId String
+  memberId  String
+  createdAt DateTime @default(now())
+
+  student   Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  member    AdminMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, memberId])
 }
 
 

@@ -10,6 +10,7 @@ import StatusBadge from '@/components/ui/StatusBadge'
 
 type Leave = {
   id: string
+  title: string
   reason: string
   fromDate: string
   toDate: string

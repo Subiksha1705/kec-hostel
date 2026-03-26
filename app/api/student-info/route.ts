@@ -55,6 +55,11 @@ export async function GET(req: NextRequest) {
             rules: true,
           },
         },
+        facultyInCharge: {
+          select: {
+            member: { select: { id: true, name: true, email: true } },
+          },
+        },
       },
     })
 

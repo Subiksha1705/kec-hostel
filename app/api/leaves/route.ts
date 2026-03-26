@@ -7,9 +7,11 @@ import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
 
 const createSchema = z.object({
+  title: z.string().min(1),
   reason: z.string().min(1),
   fromDate: z.string().datetime(),
   toDate: z.string().datetime(),
+  assignedToId: z.string().uuid(),
 })
 
 // GET /api/leaves
@@ -65,14 +67,21 @@ export async function POST(req: NextRequest) {
     const student = await prisma.student.findUnique({ where: { id: session.sub } })
     if (!student) return err('Student not found', 404)
 
+    const allowedFaculty = await prisma.studentFaculty.findUnique({
+      where: { studentId_memberId: { studentId: session.sub, memberId: body.assignedToId } },
+    })
+    if (!allowedFaculty) return err('Selected faculty is not assigned to you', 400)
+
     const leave = await prisma.leave.create({
       data: {
         studentId: session.sub,
+        title: body.title,
         reason: body.reason,
         fromDate: new Date(body.fromDate),
         toDate: new Date(body.toDate),
         status: 'PENDING',
         collegeId: student.collegeId,
+        assignedToId: body.assignedToId,
       },
     })
 

@@ -11,6 +11,7 @@ import Select from '@/components/ui/Select'
 
 type Leave = {
   id: string
+  title: string
   reason: string
   fromDate: string
   toDate: string
@@ -113,6 +114,7 @@ export default function AdminLeavesPage() {
         columns={[
           { key: 'student', label: 'Student', render: (item: Leave) => item.student.name },
           { key: 'roll', label: 'Roll No', render: (item: Leave) => item.student.rollNumber },
+          { key: 'title', label: 'Title' },
           { key: 'reason', label: 'Reason' },
           { key: 'fromDate', label: 'From', render: (item: Leave) => new Date(item.fromDate).toLocaleDateString() },
           { key: 'toDate', label: 'To', render: (item: Leave) => new Date(item.toDate).toLocaleDateString() },

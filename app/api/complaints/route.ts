@@ -9,6 +9,7 @@ import { z } from 'zod'
 const createSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
+  assignedToId: z.string().uuid(),
 })
 
 export async function GET(req: NextRequest) {
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         student: { select: { id: true, name: true, rollNumber: true } },
+        assignedTo: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -63,12 +65,18 @@ export async function POST(req: NextRequest) {
     const student = await prisma.student.findUnique({ where: { id: session.sub } })
     if (!student) return err('Student not found', 404)
 
+    const allowedFaculty = await prisma.studentFaculty.findUnique({
+      where: { studentId_memberId: { studentId: session.sub, memberId: body.assignedToId } },
+    })
+    if (!allowedFaculty) return err('Selected faculty is not assigned to you', 400)
+
     const complaint = await prisma.complaint.create({
       data: {
         studentId: session.sub,
         title: body.title,
         description: body.description,
         status: 'PENDING',
+        assignedToId: body.assignedToId,
       },
     })
 

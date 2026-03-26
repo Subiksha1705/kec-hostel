@@ -14,6 +14,7 @@ type Complaint = {
   status: 'PENDING' | 'RESOLVED' | 'CANCELLED'
   createdAt: string
   student: { name: string; rollNumber: string }
+  assignedTo?: { name: string } | null
 }
 
 const filters = ['ALL', 'PENDING', 'RESOLVED'] as const
@@ -84,6 +85,7 @@ export default function AdminComplaintsPage() {
               item.description.length > 60 ? `${item.description.slice(0, 60)}...` : item.description,
           },
           { key: 'status', label: 'Status', render: (item: Complaint) => <StatusBadge status={item.status} /> },
+          { key: 'assignedTo', label: 'Assigned To', render: (item: Complaint) => item.assignedTo?.name ?? '—' },
           { key: 'createdAt', label: 'Date', render: (item: Complaint) => new Date(item.createdAt).toLocaleDateString() },
           {
             key: 'actions',

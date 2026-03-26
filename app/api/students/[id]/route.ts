@@ -32,6 +32,7 @@ const updateSchema = z.object({
   idCardPdf: z.string().min(1).optional(),
   classId: z.string().uuid().nullable().optional(),
   hostelId: z.string().uuid().nullable().optional(),
+  facultyIds: z.array(z.string().uuid()).optional(),
 })
 
 // PUT /api/students/:id — Admin only
@@ -63,7 +64,30 @@ export async function PUT(
       classId: raw.classId || null,
       hostelId: raw.hostelId || null,
     })
-    const updated = await prisma.student.update({ where: { id }, data: body })
+
+    const facultyIds = body.facultyIds ? [...new Set(body.facultyIds)] : null
+    if (facultyIds && facultyIds.length) {
+      const count = await prisma.adminMember.count({
+        where: { id: { in: facultyIds }, collegeId: session.collegeId },
+      })
+      if (count !== facultyIds.length) return err('Invalid faculty selection', 400)
+    }
+
+    const { facultyIds: _facultyIds, ...rest } = body
+    const updated = await prisma.student.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(facultyIds
+          ? {
+              facultyInCharge: {
+                deleteMany: {},
+                create: facultyIds.map((memberId) => ({ memberId })),
+              },
+            }
+          : {}),
+      },
+    })
 
     const { password: _password, ...safe } = updated
     return ok(safe)

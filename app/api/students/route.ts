@@ -36,6 +36,7 @@ const createSchema = z.object({
   idCardPdf: z.string().min(1),
   classId: z.string().uuid().optional().nullable(),
   hostelId: z.string().uuid().optional().nullable(),
+  facultyIds: z.array(z.string().uuid()).optional(),
 })
 
 // GET /api/students
@@ -60,7 +61,13 @@ export async function GET(req: NextRequest) {
 
     const students = await prisma.student.findMany({
       where,
-      include: { class: true, hostel: true },
+      include: {
+        class: true,
+        hostel: true,
+        facultyInCharge: {
+          include: { member: { select: { id: true, name: true, email: true } } },
+        },
+      },
       orderBy: { name: 'asc' },
     })
 
@@ -100,6 +107,14 @@ export async function POST(req: NextRequest) {
 
     const hashed = await hashPassword(body.password)
 
+    const facultyIds = [...new Set(body.facultyIds ?? [])]
+    if (facultyIds.length) {
+      const count = await prisma.adminMember.count({
+        where: { id: { in: facultyIds }, collegeId: session.collegeId },
+      })
+      if (count !== facultyIds.length) return err('Invalid faculty selection', 400)
+    }
+
     const student = await prisma.student.create({
       data: {
         name: body.name,
@@ -130,6 +145,9 @@ export async function POST(req: NextRequest) {
         collegeId: session.collegeId,
         classId: body.classId ?? null,
         hostelId: body.hostelId ?? null,
+        facultyInCharge: facultyIds.length
+          ? { create: facultyIds.map((memberId) => ({ memberId })) }
+          : undefined,
       },
     })
 

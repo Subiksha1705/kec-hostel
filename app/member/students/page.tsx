@@ -39,9 +39,10 @@ type Student = {
   idCardPdf: string
   class?: { id: string; name: string } | null
   hostel?: { id: string; name: string } | null
+  facultyInCharge?: { member: { id: string; name: string; email: string } }[]
 }
 
-type Option = { id: string; name: string }
+type Option = { id: string; name: string; email?: string }
 
 type Permission = { module: string; canCreate: boolean; canEdit: boolean; canDelete: boolean }
 
@@ -74,6 +75,7 @@ type FormState = {
   idCardPdf: string
   classId: string
   hostelId: string
+  facultyIds: string[]
 }
 
 const emptyForm: FormState = {
@@ -104,6 +106,7 @@ const emptyForm: FormState = {
   idCardPdf: '',
   classId: '',
   hostelId: '',
+  facultyIds: [],
 }
 
 const toDateInput = (value?: string | null) => {
@@ -120,13 +123,16 @@ export default function MemberStudentsPage() {
     useCachedFetch<Option[]>('/api/classes')
   const { data: hostelsData, loading: hostelsLoading, refresh: refreshHostels } =
     useCachedFetch<Option[]>('/api/hostels')
+  const { data: facultyData, loading: facultyLoading, refresh: refreshFaculty } =
+    useCachedFetch<Option[]>('/api/faculty-options')
   const { data: permsData, loading: permsLoading, refresh: refreshPerms } =
     useCachedFetch<Permission[]>('/api/permissions')
   const students = studentsData ?? []
   const classes = classesData ?? []
   const hostels = hostelsData ?? []
+  const facultyOptions = facultyData ?? []
   const perms = permsData ?? []
-  const loading = studentsLoading || classesLoading || hostelsLoading || permsLoading
+  const loading = studentsLoading || classesLoading || hostelsLoading || permsLoading || facultyLoading
   const [isOpen, setIsOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [error, setError] = useState('')
@@ -146,7 +152,7 @@ export default function MemberStudentsPage() {
   const canDelete = studentPerm?.canDelete ?? false
   const { toast, showToast, clearToast } = useToast()
   const handleRefresh = async () => {
-    await Promise.all([refreshStudents(), refreshClasses(), refreshHostels(), refreshPerms()])
+    await Promise.all([refreshStudents(), refreshClasses(), refreshHostels(), refreshPerms(), refreshFaculty()])
   }
 
   const openAdd = () => {
@@ -185,6 +191,7 @@ export default function MemberStudentsPage() {
       idCardPdf: student.idCardPdf,
       classId: student.class?.id ?? '',
       hostelId: student.hostel?.id ?? '',
+      facultyIds: student.facultyInCharge?.map((f) => f.member.id) ?? [],
     })
     setError('')
     setIsOpen(true)
@@ -214,6 +221,7 @@ export default function MemberStudentsPage() {
       { label: 'Pass out year', value: form.passOutYear },
       { label: 'In year', value: form.inYear },
       { label: 'ID card PDF', value: form.idCardPdf },
+      { label: 'Faculty in charge', value: form.facultyIds.length ? 'ok' : '' },
     ]
     const missing = requiredFields.find((field) => !field.value.trim())
     if (missing) {
@@ -256,6 +264,7 @@ export default function MemberStudentsPage() {
       idCardPdf: form.idCardPdf.trim(),
       classId: form.classId || null,
       hostelId: form.hostelId || null,
+      facultyIds: form.facultyIds,
     }
 
     if (!form.id) {
@@ -757,6 +766,53 @@ export default function MemberStudentsPage() {
               ]}
             />
           </label>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <span style={fieldLabelStyle}>Faculty In Charge</span>
+            <div
+              style={{
+                display: 'grid',
+                gap: '6px',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-2)',
+                maxHeight: '180px',
+                overflowY: 'auto',
+              }}
+            >
+              {facultyOptions.length ? (
+                facultyOptions.map((member) => {
+                  const checked = form.facultyIds.includes(member.id)
+                  return (
+                    <label key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          if (event.target.checked) {
+                            setForm({ ...form, facultyIds: [...form.facultyIds, member.id] })
+                          } else {
+                            setForm({
+                              ...form,
+                              facultyIds: form.facultyIds.filter((id) => id !== member.id),
+                            })
+                          }
+                        }}
+                      />
+                      <span style={{ fontSize: '14px' }}>
+                        {member.name}
+                        {member.email ? ` (${member.email})` : ''}
+                      </span>
+                    </label>
+                  )
+                })
+              ) : (
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                  No faculty accounts available.
+                </span>
+              )}
+            </div>
+          </div>
           {error ? (
             <div
               style={{

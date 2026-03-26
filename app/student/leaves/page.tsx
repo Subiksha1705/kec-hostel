@@ -7,9 +7,11 @@ import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
+import Select from '@/components/ui/Select'
 
 type Leave = {
   id: string
+  title: string
   reason: string
   fromDate: string
   toDate: string
@@ -19,20 +21,32 @@ type Leave = {
   createdAt: string
 }
 
+type StudentInfo = {
+  facultyInCharge?: { member: { id: string; name: string; email?: string } }[]
+}
+
 export default function StudentLeavesPage() {
   const { data, loading, refresh, fetchedAt } = useCachedFetch<Leave[]>('/api/leaves')
+  const { data: studentInfo } = useCachedFetch<StudentInfo>('/api/student-info')
   const leaves = data ?? []
+  const facultyOptions =
+    studentInfo?.facultyInCharge?.map((item) => ({
+      value: item.member.id,
+      label: `${item.member.name}${item.member.email ? ` (${item.member.email})` : ''}`,
+    })) ?? []
   const [isOpen, setIsOpen] = useState(false)
+  const [title, setTitle] = useState('')
   const [reason, setReason] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [assignedToId, setAssignedToId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const submit = async () => {
     if (submitting) return
     setError('')
-    if (!reason.trim() || !fromDate || !toDate) {
+    if (!title.trim() || !reason.trim() || !fromDate || !toDate || !assignedToId) {
       setError('Please fill all fields')
       return
     }
@@ -42,9 +56,11 @@ export default function StudentLeavesPage() {
     }
 
     const payload = {
+      title: title.trim(),
       reason: reason.trim(),
       fromDate: new Date(`${fromDate}T00:00:00`).toISOString(),
       toDate: new Date(`${toDate}T00:00:00`).toISOString(),
+      assignedToId,
     }
 
     setSubmitting(true)
@@ -60,9 +76,11 @@ export default function StudentLeavesPage() {
     }
 
     setIsOpen(false)
+    setTitle('')
     setReason('')
     setFromDate('')
     setToDate('')
+    setAssignedToId('')
     cache.invalidate('/api/leaves')
     refresh()
   }
@@ -109,6 +127,7 @@ export default function StudentLeavesPage() {
       <Table
         loading={loading}
         columns={[
+          { key: 'title', label: 'Title' },
           { key: 'reason', label: 'Reason' },
           { key: 'fromDate', label: 'From', render: (item: Leave) => new Date(item.fromDate).toLocaleDateString() },
           { key: 'toDate', label: 'To', render: (item: Leave) => new Date(item.toDate).toLocaleDateString() },
@@ -145,6 +164,17 @@ export default function StudentLeavesPage() {
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Apply for Leave">
         <div style={{ display: 'grid', gap: '12px' }}>
+          <input
+            placeholder="Title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-2)',
+            }}
+          />
           <textarea
             placeholder="Reason"
             value={reason}
@@ -180,6 +210,15 @@ export default function StudentLeavesPage() {
               border: '1px solid var(--border)',
               background: 'var(--surface-2)',
             }}
+          />
+          <Select
+            value={assignedToId}
+            onChange={(value) => setAssignedToId(value)}
+            options={[
+              { value: '', label: facultyOptions.length ? 'Assign to faculty' : 'No faculty available' },
+              ...facultyOptions,
+            ]}
+            disabled={!facultyOptions.length}
           />
           {error ? (
             <div style={{ background: 'var(--rose)', color: '#7a2020', padding: '8px 10px', borderRadius: 'var(--radius)' }}>

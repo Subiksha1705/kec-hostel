@@ -10,6 +10,7 @@ import Toast from '@/components/ui/Toast'
 
 type Leave = {
   id: string
+  title: string
   reason: string
   fromDate: string
   toDate: string
@@ -123,6 +124,7 @@ export default function MemberLeavesPage() {
         columns={[
           { key: 'student', label: 'Student', render: (item: Leave) => item.student.name },
           { key: 'roll', label: 'Roll No', render: (item: Leave) => item.student.rollNumber },
+          { key: 'title', label: 'Title' },
           { key: 'reason', label: 'Reason' },
           {
             key: 'fromDate',

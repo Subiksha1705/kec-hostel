@@ -7,36 +7,49 @@ import RefreshButton from '@/components/ui/RefreshButton'
 import Modal from '@/components/ui/Modal'
 import Table from '@/components/ui/Table'
 import StatusBadge from '@/components/ui/StatusBadge'
+import Select from '@/components/ui/Select'
 
 type Complaint = {
   id: string
   title: string
   description: string
   status: 'PENDING' | 'RESOLVED' | 'CANCELLED'
+  assignedTo?: { name: string } | null
   createdAt: string
+}
+
+type StudentInfo = {
+  facultyInCharge?: { member: { id: string; name: string; email?: string } }[]
 }
 
 export default function StudentComplaintsPage() {
   const { data, loading, refresh, fetchedAt } =
     useCachedFetch<Complaint[]>('/api/complaints')
+  const { data: studentInfo } = useCachedFetch<StudentInfo>('/api/student-info')
   const complaints = data ?? []
+  const facultyOptions =
+    studentInfo?.facultyInCharge?.map((item) => ({
+      value: item.member.id,
+      label: `${item.member.name}${item.member.email ? ` (${item.member.email})` : ''}`,
+    })) ?? []
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [assignedToId, setAssignedToId] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const submit = async () => {
     if (submitting) return
     setError('')
-    if (!title.trim() || !description.trim()) {
-      setError('Please fill both title and description')
+    if (!title.trim() || !description.trim() || !assignedToId) {
+      setError('Please fill all fields')
       return
     }
     setSubmitting(true)
     const { res, data } = await apiJson<{ ok: boolean; error?: string }>('/api/complaints', {
       method: 'POST',
-      body: JSON.stringify({ title: title.trim(), description: description.trim() }),
+      body: JSON.stringify({ title: title.trim(), description: description.trim(), assignedToId }),
     })
     setSubmitting(false)
     if (!res.ok || !data?.ok) {
@@ -45,6 +58,7 @@ export default function StudentComplaintsPage() {
     }
     setTitle('')
     setDescription('')
+    setAssignedToId('')
     setIsOpen(false)
     cache.invalidate('/api/complaints')
     refresh()
@@ -100,6 +114,7 @@ export default function StudentComplaintsPage() {
               item.description.length > 60 ? `${item.description.slice(0, 60)}...` : item.description,
           },
           { key: 'status', label: 'Status', render: (item: Complaint) => <StatusBadge status={item.status} /> },
+          { key: 'assignedTo', label: 'Assigned To', render: (item: Complaint) => item.assignedTo?.name ?? '—' },
           { key: 'createdAt', label: 'Date', render: (item: Complaint) => new Date(item.createdAt).toLocaleDateString() },
           {
             key: 'actions',
@@ -153,6 +168,15 @@ export default function StudentComplaintsPage() {
               background: 'var(--surface-2)',
               resize: 'vertical',
             }}
+          />
+          <Select
+            value={assignedToId}
+            onChange={(value) => setAssignedToId(value)}
+            options={[
+              { value: '', label: facultyOptions.length ? 'Assign to faculty' : 'No faculty available' },
+              ...facultyOptions,
+            ]}
+            disabled={!facultyOptions.length}
           />
           {error ? (
             <div
