@@ -1,4 +1,4 @@
-type Status = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ASSIGNED' | 'RESOLVED'
+type Status = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ASSIGNED' | 'RESOLVED' | 'CANCELLED'
 
 const styles: Record<Status, { background: string; color: string }> = {
   PENDING: { background: 'var(--blush)', color: '#7a3020' },
@@ -6,6 +6,7 @@ const styles: Record<Status, { background: string; color: string }> = {
   REJECTED: { background: 'var(--rose)', color: '#7a2020' },
   ASSIGNED: { background: 'var(--sky)', color: '#1a3c5c' },
   RESOLVED: { background: 'var(--mint)', color: '#1a5c3a' },
+  CANCELLED: { background: 'var(--surface-2)', color: 'var(--text-secondary)' },
 }
 
 export default function StatusBadge({ status }: { status: Status }) {

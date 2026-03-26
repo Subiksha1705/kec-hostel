@@ -12,7 +12,7 @@ type Complaint = {
   id: string
   title: string
   description: string
-  status: 'PENDING' | 'RESOLVED'
+  status: 'PENDING' | 'RESOLVED' | 'CANCELLED'
   createdAt: string
 }
 
@@ -46,6 +46,20 @@ export default function StudentComplaintsPage() {
     setTitle('')
     setDescription('')
     setIsOpen(false)
+    cache.invalidate('/api/complaints')
+    refresh()
+  }
+
+  const cancelComplaint = async (id: string) => {
+    if (!window.confirm('Cancel this complaint request?')) return
+    const { res, data } = await apiJson<{ ok: boolean; error?: string }>(
+      `/api/complaints/${id}`,
+      { method: 'DELETE' }
+    )
+    if (!res.ok || !data?.ok) {
+      setError(data?.error ?? 'Failed to cancel complaint')
+      return
+    }
     cache.invalidate('/api/complaints')
     refresh()
   }
@@ -87,6 +101,28 @@ export default function StudentComplaintsPage() {
           },
           { key: 'status', label: 'Status', render: (item: Complaint) => <StatusBadge status={item.status} /> },
           { key: 'createdAt', label: 'Date', render: (item: Complaint) => new Date(item.createdAt).toLocaleDateString() },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (item: Complaint) =>
+              item.status === 'PENDING' ? (
+                <button
+                  onClick={() => cancelComplaint(item.id)}
+                  style={{
+                    background: 'var(--rose)',
+                    color: '#7a2020',
+                    border: '1px solid var(--border)',
+                    padding: '6px 10px',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              ) : (
+                <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>—</span>
+              ),
+          },
         ]}
         data={complaints}
         emptyMessage="No complaints submitted yet."

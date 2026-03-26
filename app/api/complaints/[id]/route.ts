@@ -48,3 +48,26 @@ export async function PUT(
     return err(msg, 500)
   }
 }
+
+// DELETE /api/complaints/[id] — Student cancels a pending complaint
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const session = getSession(req)
+    if (session.type !== 'STUDENT') return err('Forbidden', 403)
+
+    const complaint = await prisma.complaint.findUnique({ where: { id } })
+    if (!complaint || complaint.studentId !== session.sub) return err('Not found', 404)
+    if (complaint.status !== 'PENDING') return err('Only pending complaints can be cancelled', 400)
+
+    await prisma.complaint.update({ where: { id }, data: { status: 'CANCELLED' } })
+    return ok({ cancelled: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Server error'
+    if (msg === 'UNAUTHORIZED') return err('Unauthorized', 401)
+    return err(msg, 500)
+  }
+}

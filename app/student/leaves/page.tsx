@@ -13,7 +13,7 @@ type Leave = {
   reason: string
   fromDate: string
   toDate: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
   assignedTo?: { name: string } | null
   reviewedBy?: { name: string } | null
   createdAt: string
@@ -67,6 +67,20 @@ export default function StudentLeavesPage() {
     refresh()
   }
 
+  const cancelLeave = async (id: string) => {
+    if (!window.confirm('Cancel this leave request?')) return
+    const { res, data } = await apiJson<{ ok: boolean; error?: string }>(
+      `/api/leaves/${id}/cancel`,
+      { method: 'DELETE' }
+    )
+    if (!res.ok || !data?.ok) {
+      setError(data?.error ?? 'Failed to cancel leave')
+      return
+    }
+    cache.invalidate('/api/leaves')
+    refresh()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -102,6 +116,28 @@ export default function StudentLeavesPage() {
           { key: 'assignedTo', label: 'Assigned To', render: (item: Leave) => item.assignedTo?.name ?? '—' },
           { key: 'reviewedBy', label: 'Reviewed By', render: (item: Leave) => item.reviewedBy?.name ?? '—' },
           { key: 'createdAt', label: 'Submitted On', render: (item: Leave) => new Date(item.createdAt).toLocaleDateString() },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (item: Leave) =>
+              item.status === 'PENDING' ? (
+                <button
+                  onClick={() => cancelLeave(item.id)}
+                  style={{
+                    background: 'var(--rose)',
+                    color: '#7a2020',
+                    border: '1px solid var(--border)',
+                    padding: '6px 10px',
+                    borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              ) : (
+                <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>—</span>
+              ),
+          },
         ]}
         data={leaves}
         emptyMessage="No leave requests yet."

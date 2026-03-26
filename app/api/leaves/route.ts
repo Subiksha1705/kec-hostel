@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     let where: object
 
     if (session.type === 'ADMIN' || session.type === 'SUPER') {
-      where = { collegeId: session.collegeId }
+      where = { collegeId: session.collegeId, status: { not: 'CANCELLED' } }
     } else if (session.type === 'MEMBER') {
       await requirePermission(session.roleId!, 'leaves', 'canView')
       const studentFilter = scopeFilter({
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         classId: session.classId ?? null,
         hostelId: session.hostelId ?? null,
       })
-      where = { student: studentFilter, assignedToId: session.sub }
+      where = { student: studentFilter, assignedToId: session.sub, status: { not: 'CANCELLED' } }
     } else if (session.type === 'STUDENT') {
       where = { studentId: session.sub }
     } else {

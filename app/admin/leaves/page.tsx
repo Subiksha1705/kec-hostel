@@ -14,7 +14,7 @@ type Leave = {
   reason: string
   fromDate: string
   toDate: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
   student: { name: string; rollNumber: string }
   assignedTo?: { id: string; name: string } | null
   reviewedBy?: { name: string } | null

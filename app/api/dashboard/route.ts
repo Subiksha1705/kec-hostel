@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       prisma.adminMember.count({ where: { collegeId: session.collegeId } }),
       prisma.role.count({ where: { collegeId: session.collegeId } }),
       prisma.leave.findMany({
-        where: { collegeId: session.collegeId },
+        where: { collegeId: session.collegeId, status: { not: 'CANCELLED' } },
         include: {
           student: { select: { id: true, name: true, rollNumber: true } },
           assignedTo: { select: { id: true, name: true } },

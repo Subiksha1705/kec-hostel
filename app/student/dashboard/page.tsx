@@ -13,7 +13,7 @@ type Leave = {
   reason: string
   fromDate: string
   toDate: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 }
 
 type Announcement = {

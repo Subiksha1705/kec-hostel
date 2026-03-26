@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     if (session.type === 'ADMIN' || session.type === 'SUPER') {
       where = {
         student: { collegeId: session.collegeId },
+        status: { not: 'CANCELLED' },
       }
     } else if (session.type === 'MEMBER') {
       await requirePermission(session.roleId!, 'complaints', 'canView')
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
         classId: session.classId ?? null,
         hostelId: session.hostelId ?? null,
       })
-      where = { student: filter }
+      where = { student: filter, status: { not: 'CANCELLED' } }
     } else if (session.type === 'STUDENT') {
       where = { studentId: session.sub }
     } else {

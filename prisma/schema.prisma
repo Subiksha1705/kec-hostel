@@ -16,11 +16,13 @@ enum LeaveStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELLED
 }
 
 enum ComplaintStatus {
   PENDING
   RESOLVED
+  CANCELLED
 }
 
 

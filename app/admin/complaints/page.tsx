@@ -11,7 +11,7 @@ type Complaint = {
   id: string
   title: string
   description: string
-  status: 'PENDING' | 'RESOLVED'
+  status: 'PENDING' | 'RESOLVED' | 'CANCELLED'
   createdAt: string
   student: { name: string; rollNumber: string }
 }
