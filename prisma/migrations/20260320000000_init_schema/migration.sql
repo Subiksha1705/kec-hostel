@@ -1,26 +1,33 @@
--- CreateEnum
-CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
+DO $$ BEGIN
+  CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateEnum
-CREATE TYPE "ComplaintStatus" AS ENUM ('PENDING', 'RESOLVED', 'CANCELLED');
+DO $$ BEGIN
+  CREATE TYPE "ComplaintStatus" AS ENUM ('PENDING', 'RESOLVED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateEnum
-CREATE TYPE "LeaveType" AS ENUM ('SICK', 'PERSONAL', 'EMERGENCY', 'OD');
+DO $$ BEGIN
+  CREATE TYPE "LeaveType" AS ENUM ('SICK', 'PERSONAL', 'EMERGENCY', 'OD');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateEnum
-CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+DO $$ BEGIN
+  CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateEnum
-CREATE TYPE "StudentStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'PASSED_OUT');
+DO $$ BEGIN
+  CREATE TYPE "StudentStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'PASSED_OUT');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateEnum
-CREATE TYPE "FeeStatus" AS ENUM ('PAID', 'PENDING', 'OVERDUE');
+DO $$ BEGIN
+  CREATE TYPE "FeeStatus" AS ENUM ('PAID', 'PENDING', 'OVERDUE');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateEnum
-CREATE TYPE "KnowledgeSourceType" AS ENUM ('TEXT', 'FILE', 'URL');
+DO $$ BEGIN
+  CREATE TYPE "KnowledgeSourceType" AS ENUM ('TEXT', 'FILE', 'URL');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- CreateTable
-CREATE TABLE "College" (
+CREATE TABLE IF NOT EXISTS "College" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "domain" TEXT,
@@ -31,7 +38,7 @@ CREATE TABLE "College" (
 );
 
 -- CreateTable
-CREATE TABLE "Admin" (
+CREATE TABLE IF NOT EXISTS "Admin" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -43,7 +50,7 @@ CREATE TABLE "Admin" (
 );
 
 -- CreateTable
-CREATE TABLE "Role" (
+CREATE TABLE IF NOT EXISTS "Role" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "collegeId" TEXT NOT NULL,
@@ -53,7 +60,7 @@ CREATE TABLE "Role" (
 );
 
 -- CreateTable
-CREATE TABLE "RolePermission" (
+CREATE TABLE IF NOT EXISTS "RolePermission" (
     "id" TEXT NOT NULL,
     "roleId" TEXT NOT NULL,
     "module" TEXT NOT NULL,
@@ -67,7 +74,7 @@ CREATE TABLE "RolePermission" (
 );
 
 -- CreateTable
-CREATE TABLE "AdminMember" (
+CREATE TABLE IF NOT EXISTS "AdminMember" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -82,7 +89,7 @@ CREATE TABLE "AdminMember" (
 );
 
 -- CreateTable
-CREATE TABLE "Class" (
+CREATE TABLE IF NOT EXISTS "Class" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "collegeId" TEXT NOT NULL,
@@ -92,7 +99,7 @@ CREATE TABLE "Class" (
 );
 
 -- CreateTable
-CREATE TABLE "Hostel" (
+CREATE TABLE IF NOT EXISTS "Hostel" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "location" TEXT NOT NULL,
@@ -107,7 +114,7 @@ CREATE TABLE "Hostel" (
 );
 
 -- CreateTable
-CREATE TABLE "ChatbotKnowledgeSource" (
+CREATE TABLE IF NOT EXISTS "ChatbotKnowledgeSource" (
     "id" TEXT NOT NULL,
     "collegeId" TEXT NOT NULL,
     "type" "KnowledgeSourceType" NOT NULL,
@@ -123,7 +130,7 @@ CREATE TABLE "ChatbotKnowledgeSource" (
 );
 
 -- CreateTable
-CREATE TABLE "Student" (
+CREATE TABLE IF NOT EXISTS "Student" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -160,7 +167,7 @@ CREATE TABLE "Student" (
 );
 
 -- CreateTable
-CREATE TABLE "Announcement" (
+CREATE TABLE IF NOT EXISTS "Announcement" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -181,7 +188,7 @@ CREATE TABLE "Announcement" (
 );
 
 -- CreateTable
-CREATE TABLE "Leave" (
+CREATE TABLE IF NOT EXISTS "Leave" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "collegeId" TEXT NOT NULL,
@@ -204,7 +211,7 @@ CREATE TABLE "Leave" (
 );
 
 -- CreateTable
-CREATE TABLE "Complaint" (
+CREATE TABLE IF NOT EXISTS "Complaint" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -217,7 +224,7 @@ CREATE TABLE "Complaint" (
 );
 
 -- CreateTable
-CREATE TABLE "StudentFaculty" (
+CREATE TABLE IF NOT EXISTS "StudentFaculty" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "memberId" TEXT NOT NULL,
@@ -227,7 +234,7 @@ CREATE TABLE "StudentFaculty" (
 );
 
 -- CreateTable
-CREATE TABLE "Review" (
+CREATE TABLE IF NOT EXISTS "Review" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
@@ -238,7 +245,7 @@ CREATE TABLE "Review" (
 );
 
 -- CreateTable
-CREATE TABLE "Gallery" (
+CREATE TABLE IF NOT EXISTS "Gallery" (
     "id" TEXT NOT NULL,
     "imageUrl" TEXT NOT NULL,
     "caption" TEXT,
@@ -258,34 +265,34 @@ CREATE UNIQUE INDEX "RolePermission_roleId_module_key" ON "RolePermission"("role
 CREATE UNIQUE INDEX "AdminMember_email_key" ON "AdminMember"("email");
 
 -- CreateIndex
-CREATE INDEX "ChatbotKnowledgeSource_collegeId_idx" ON "ChatbotKnowledgeSource"("collegeId");
+CREATE INDEX IF NOT EXISTS "ChatbotKnowledgeSource_collegeId_idx" ON "ChatbotKnowledgeSource"("collegeId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Student_email_key" ON "Student"("email");
 
 -- CreateIndex
-CREATE INDEX "Student_collegeId_idx" ON "Student"("collegeId");
+CREATE INDEX IF NOT EXISTS "Student_collegeId_idx" ON "Student"("collegeId");
 
 -- CreateIndex
-CREATE INDEX "Student_classId_idx" ON "Student"("classId");
+CREATE INDEX IF NOT EXISTS "Student_classId_idx" ON "Student"("classId");
 
 -- CreateIndex
-CREATE INDEX "Student_hostelId_idx" ON "Student"("hostelId");
+CREATE INDEX IF NOT EXISTS "Student_hostelId_idx" ON "Student"("hostelId");
 
 -- CreateIndex
-CREATE INDEX "Announcement_isActive_createdAt_idx" ON "Announcement"("isActive", "createdAt");
+CREATE INDEX IF NOT EXISTS "Announcement_isActive_createdAt_idx" ON "Announcement"("isActive", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "Announcement_isPinned_createdAt_idx" ON "Announcement"("isPinned", "createdAt");
+CREATE INDEX IF NOT EXISTS "Announcement_isPinned_createdAt_idx" ON "Announcement"("isPinned", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "Leave_studentId_idx" ON "Leave"("studentId");
+CREATE INDEX IF NOT EXISTS "Leave_studentId_idx" ON "Leave"("studentId");
 
 -- CreateIndex
-CREATE INDEX "Leave_collegeId_idx" ON "Leave"("collegeId");
+CREATE INDEX IF NOT EXISTS "Leave_collegeId_idx" ON "Leave"("collegeId");
 
 -- CreateIndex
-CREATE INDEX "Leave_status_idx" ON "Leave"("status");
+CREATE INDEX IF NOT EXISTS "Leave_status_idx" ON "Leave"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "StudentFaculty_studentId_memberId_key" ON "StudentFaculty"("studentId", "memberId");
@@ -355,4 +362,3 @@ ALTER TABLE "Review" ADD CONSTRAINT "Review_studentId_fkey" FOREIGN KEY ("studen
 
 -- AddForeignKey
 ALTER TABLE "Gallery" ADD CONSTRAINT "Gallery_collegeId_fkey" FOREIGN KEY ("collegeId") REFERENCES "College"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
