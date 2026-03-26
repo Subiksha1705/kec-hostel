@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as jose from 'jose'
 
-export const runtime = 'nodejs'
-
 const PROTECTED: Record<string, string> = {
   '/admin': 'ADMIN',
   '/member': 'MEMBER',
