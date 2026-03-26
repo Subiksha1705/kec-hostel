@@ -19,11 +19,11 @@ const updateSchema = z.object({
 })
 
 export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest
 ) {
   try {
-    const { id } = await params
+    const id = req.nextUrl.pathname.split('/').pop() ?? ''
+    if (!id) return err('Not found', 404)
     const session = getSession(req)
     if (session.type === 'MEMBER') {
       await requirePermission(session.roleId!, 'announcements', 'canEdit')
@@ -50,11 +50,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest
 ) {
   try {
-    const { id } = await params
+    const id = req.nextUrl.pathname.split('/').pop() ?? ''
+    if (!id) return err('Not found', 404)
     const session = getSession(req)
     if (session.type === 'MEMBER') {
       await requirePermission(session.roleId!, 'announcements', 'canDelete')
