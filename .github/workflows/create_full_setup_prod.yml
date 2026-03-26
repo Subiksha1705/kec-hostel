@@ -1,0 +1,19 @@
+name: Create Full Setup (Prod)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn prisma generate
+      - run: yarn create-full-setup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
