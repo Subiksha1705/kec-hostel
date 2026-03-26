@@ -13,13 +13,14 @@ const updateSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   const session = getSession(req)
   if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
   const source = await prisma.chatbotKnowledgeSource.findFirst({
-    where: { id: params.id, collegeId: session.collegeId },
+    where: { id, collegeId: session.collegeId },
   })
 
   if (!source) return err('Not found', 404)
@@ -29,30 +30,32 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   const session = getSession(req)
   if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
   const source = await prisma.chatbotKnowledgeSource.findFirst({
-    where: { id: params.id, collegeId: session.collegeId },
+    where: { id, collegeId: session.collegeId },
   })
 
   if (!source) return err('Not found', 404)
 
-  await prisma.chatbotKnowledgeSource.delete({ where: { id: params.id } })
+  await prisma.chatbotKnowledgeSource.delete({ where: { id } })
   return ok({ deleted: true })
 }
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   const session = getSession(req)
   if (session.type !== 'ADMIN') return err('Forbidden', 403)
 
   const source = await prisma.chatbotKnowledgeSource.findFirst({
-    where: { id: params.id, collegeId: session.collegeId },
+    where: { id, collegeId: session.collegeId },
   })
 
   if (!source) return err('Not found', 404)

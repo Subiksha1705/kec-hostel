@@ -289,9 +289,7 @@ export default function AdminAnnouncementForm({ editData, onSuccess }: Props) {
             <img src={form.imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         ) : null}
-        <div className="text-xs text-[var(--text-muted)]">
-          {form.role} • {form.postedBy || 'Posted by'}
-        </div>
+        <div className="text-xs text-[var(--text-muted)]">{posterLabel}</div>
         <div className="text-lg font-semibold" style={{ fontFamily: 'var(--font-dm-serif)' }}>
           {form.title || 'Announcement title'}
         </div>

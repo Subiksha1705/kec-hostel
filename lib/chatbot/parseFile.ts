@@ -10,7 +10,9 @@ export async function parseFileToText(
 ): Promise<string> {
   // PDF — use pdf-parse
   if (mimeType === 'application/pdf') {
-    const pdfParse = (await import('pdf-parse')).default
+    const pdfParseModule = await import('pdf-parse')
+    const pdfParse =
+      (pdfParseModule as any).default ?? (pdfParseModule as any)
     const result = await pdfParse(buffer)
     return result.text
   }
