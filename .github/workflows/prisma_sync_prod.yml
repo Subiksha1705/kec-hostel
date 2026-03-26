@@ -27,3 +27,4 @@ jobs:
       - run: yarn prisma db push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
