@@ -14,7 +14,7 @@ type Role = {
   _count: { members: number }
 }
 
-const modules = ['students', 'leaves', 'complaints'] as const
+const modules = ['students', 'leaves', 'complaints', 'announcements'] as const
 
 type Permission = {
   module: (typeof modules)[number]

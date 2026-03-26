@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { FeeStatus, Gender, StudentStatus } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
@@ -34,6 +36,21 @@ const updateSchema = z.object({
   hostelId: z.string().uuid().nullable().optional(),
   facultyIds: z.array(z.string().uuid()).optional(),
 })
+
+const normalizeEnum = <T extends string>(
+  value: string,
+  allowed: readonly T[],
+  label: string
+): T => {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, '_')
+  const match = allowed.find((item) => item === normalized)
+  if (!match) throw new Error(`Invalid ${label}: ${value}`)
+  return match
+}
+
+const GENDER_VALUES = [Gender.MALE, Gender.FEMALE, Gender.OTHER] as const
+const STATUS_VALUES = [StudentStatus.ACTIVE, StudentStatus.INACTIVE, StudentStatus.PASSED_OUT] as const
+const FEE_VALUES = [FeeStatus.PAID, FeeStatus.PENDING, FeeStatus.OVERDUE] as const
 
 // PUT /api/students/:id — Admin only
 export async function PUT(
@@ -73,11 +90,25 @@ export async function PUT(
       if (count !== facultyIds.length) return err('Invalid faculty selection', 400)
     }
 
-    const { facultyIds: _facultyIds, ...rest } = body
+    const { facultyIds: _facultyIds, gender, status, feeStatus, ...rest } = body
+
+    let normalizedGender: Gender | undefined
+    let normalizedStatus: StudentStatus | undefined
+    let normalizedFeeStatus: FeeStatus | undefined
+    try {
+      if (gender) normalizedGender = normalizeEnum(gender, GENDER_VALUES, 'gender')
+      if (status) normalizedStatus = normalizeEnum(status, STATUS_VALUES, 'status')
+      if (feeStatus) normalizedFeeStatus = normalizeEnum(feeStatus, FEE_VALUES, 'feeStatus')
+    } catch (error) {
+      return err(error instanceof Error ? error.message : 'Invalid enum value', 400)
+    }
     const updated = await prisma.student.update({
       where: { id },
       data: {
         ...rest,
+        ...(normalizedGender ? { gender: normalizedGender } : {}),
+        ...(normalizedStatus ? { status: normalizedStatus } : {}),
+        ...(normalizedFeeStatus ? { feeStatus: normalizedFeeStatus } : {}),
         ...(facultyIds
           ? {
               facultyInCharge: {
@@ -86,7 +117,7 @@ export async function PUT(
               },
             }
           : {}),
-      },
+      } as Prisma.StudentUncheckedUpdateInput,
     })
 
     const { password: _password, ...safe } = updated

@@ -79,7 +79,7 @@ async function main() {
     (await prisma.role.findFirst({ where: { name: ROLE_NAME, collegeId: college.id } })) ??
     (await prisma.role.create({ data: { name: ROLE_NAME, collegeId: college.id } }))
 
-  const modules = ['students', 'leaves', 'complaints'] as const
+  const modules = ['students', 'leaves', 'complaints', 'announcements'] as const
   for (const module of modules) {
     await prisma.rolePermission.upsert({
       where: { roleId_module: { roleId: role.id, module } },

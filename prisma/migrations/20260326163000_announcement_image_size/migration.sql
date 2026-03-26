@@ -1,0 +1,2 @@
+ALTER TABLE "Announcement" ADD COLUMN IF NOT EXISTS "imageWidth" INTEGER;
+ALTER TABLE "Announcement" ADD COLUMN IF NOT EXISTS "imageHeight" INTEGER;

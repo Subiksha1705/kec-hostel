@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export default async function AnnouncementsSlot() {
   const announcements = await prisma.announcement.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
   })
 
   return <AnnouncementsCarousel announcements={announcements} />

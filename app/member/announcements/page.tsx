@@ -25,7 +25,7 @@ type Announcement = {
   createdAt: string
 }
 
-export default function AdminAnnouncementsPage() {
+export default function MemberAnnouncementsPage() {
   const { data, loading, refresh } = useCachedFetch<Announcement[]>('/api/announcements')
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState<Announcement | null>(null)

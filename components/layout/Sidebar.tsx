@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck, MessageSquare, Building, School } from 'lucide-react'
+import { LayoutDashboard, Shield, Users, GraduationCap, CalendarCheck, MessageSquare, Building, School, Megaphone } from 'lucide-react'
 import { apiJson } from '@/lib/api/client'
 import { cache } from '@/lib/cache'
 
@@ -18,10 +18,16 @@ export default function Sidebar({ userType, width }: { userType: UserType; width
   const pathname = usePathname()
   const [userName, setUserName] = useState('User')
   const [roleLabel, setRoleLabel] = useState('User')
-  const [permissions, setPermissions] = useState<{ students: boolean; leaves: boolean; complaints: boolean }>({
+  const [permissions, setPermissions] = useState<{
+    students: boolean
+    leaves: boolean
+    complaints: boolean
+    announcements: boolean
+  }>({
     students: true,
     leaves: true,
     complaints: true,
+    announcements: true,
   })
   const [profileOpen, setProfileOpen] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
@@ -48,7 +54,8 @@ export default function Sidebar({ userType, width }: { userType: UserType; width
         const students = perms.find((p) => p.module === 'students')?.canView ?? false
         const leaves = perms.find((p) => p.module === 'leaves')?.canView ?? false
         const complaints = perms.find((p) => p.module === 'complaints')?.canView ?? false
-        setPermissions({ students, leaves, complaints })
+        const announcements = perms.find((p) => p.module === 'announcements')?.canView ?? false
+        setPermissions({ students, leaves, complaints, announcements })
       })
       .catch(() => {})
 
@@ -68,6 +75,7 @@ export default function Sidebar({ userType, width }: { userType: UserType; width
         { href: '/admin/students', label: 'Students', icon: <GraduationCap size={18} /> },
         { href: '/admin/leaves', label: 'Leaves', icon: <CalendarCheck size={18} /> },
         { href: '/admin/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
+        { href: '/admin/announcements', label: 'Announcements', icon: <Megaphone size={18} /> },
         { href: '/admin/hostel-info', label: 'Hostel Info', icon: <Building size={18} /> },
       ]
     }
@@ -83,15 +91,19 @@ export default function Sidebar({ userType, width }: { userType: UserType; width
         ...(permissions.complaints
           ? [{ href: '/member/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> }]
           : []),
+        ...(permissions.announcements
+          ? [{ href: '/member/announcements', label: 'Announcements', icon: <Megaphone size={18} /> }]
+          : []),
       ]
     }
     return [
       { href: '/student/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
       { href: '/student/leaves', label: 'My Leaves', icon: <CalendarCheck size={18} /> },
       { href: '/student/complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
+      { href: '/student/announcements', label: 'Announcements', icon: <Megaphone size={18} /> },
       { href: '/student/student-info', label: 'Student Info', icon: <Building size={18} /> },
     ]
-  }, [permissions.complaints, permissions.leaves, permissions.students, userType])
+  }, [permissions.announcements, permissions.complaints, permissions.leaves, permissions.students, userType])
 
   const handleLogout = async (mode: 'entirely' | 'account') => {
     setShowLogoutMenu(false)

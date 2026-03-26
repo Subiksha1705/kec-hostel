@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { FeeStatus, Gender, StudentStatus } from '@prisma/client'
 import { getSession } from '@/lib/auth/session'
 import { requirePermission } from '@/lib/rbac'
 import { scopeFilter } from '@/lib/scope'
@@ -38,6 +39,21 @@ const createSchema = z.object({
   hostelId: z.string().uuid().optional().nullable(),
   facultyIds: z.array(z.string().uuid()).optional(),
 })
+
+const normalizeEnum = <T extends string>(
+  value: string,
+  allowed: readonly T[],
+  label: string
+): T => {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, '_')
+  const match = allowed.find((item) => item === normalized)
+  if (!match) throw new Error(`Invalid ${label}: ${value}`)
+  return match
+}
+
+const GENDER_VALUES = [Gender.MALE, Gender.FEMALE, Gender.OTHER] as const
+const STATUS_VALUES = [StudentStatus.ACTIVE, StudentStatus.INACTIVE, StudentStatus.PASSED_OUT] as const
+const FEE_VALUES = [FeeStatus.PAID, FeeStatus.PENDING, FeeStatus.OVERDUE] as const
 
 // GET /api/students
 export async function GET(req: NextRequest) {
@@ -115,6 +131,17 @@ export async function POST(req: NextRequest) {
       if (count !== facultyIds.length) return err('Invalid faculty selection', 400)
     }
 
+    let gender: Gender
+    let status: StudentStatus
+    let feeStatus: FeeStatus
+    try {
+      gender = normalizeEnum(body.gender, GENDER_VALUES, 'gender')
+      status = normalizeEnum(body.status, STATUS_VALUES, 'status')
+      feeStatus = normalizeEnum(body.feeStatus, FEE_VALUES, 'feeStatus')
+    } catch (error) {
+      return err(error instanceof Error ? error.message : 'Invalid enum value', 400)
+    }
+
     const student = await prisma.student.create({
       data: {
         name: body.name,
@@ -126,10 +153,10 @@ export async function POST(req: NextRequest) {
         year: body.year,
         roomNumber: body.roomNumber ?? null,
         bedNumber: body.bedNumber ?? null,
-        gender: body.gender,
+        gender,
         parentName: body.parentName,
         parentContact: body.parentContact,
-        status: body.status,
+        status,
         profileImage: body.profileImage,
         address: body.address,
         dateOfBirth: body.dateOfBirth,
@@ -138,7 +165,7 @@ export async function POST(req: NextRequest) {
         bloodGroup: body.bloodGroup,
         checkInDate: body.checkInDate,
         checkOutDate: body.checkOutDate,
-        feeStatus: body.feeStatus,
+        feeStatus,
         passOutYear: body.passOutYear,
         inYear: body.inYear,
         idCardPdf: body.idCardPdf,

@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma'
 
 type Action = 'canView' | 'canCreate' | 'canEdit' | 'canDelete' | 'canApprove'
 
-export const MODULES = ['students', 'leaves', 'complaints', 'reviews'] as const
+export const MODULES = ['students', 'leaves', 'complaints', 'announcements', 'reviews'] as const
 export type Module = (typeof MODULES)[number]
 
 /**

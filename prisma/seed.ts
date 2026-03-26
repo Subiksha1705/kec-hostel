@@ -73,7 +73,7 @@ async function main() {
       phoneNumber: '+919999999999',
       department: 'CSE',
       year: '3',
-      gender: 'Male',
+      gender: 'MALE',
       parentName: 'Test Parent',
       parentContact: '+918888888888',
       status: 'ACTIVE',
@@ -96,11 +96,15 @@ async function main() {
   await prisma.leave.create({
     data: {
       studentId: student.id,
+      collegeId: college.id,
+      leaveType: 'SICK',
+      title: 'Medical appointment',
       reason: 'Medical appointment',
       fromDate: new Date('2025-02-01'),
       toDate: new Date('2025-02-02'),
+      totalDays: 2,
+      documentUrl: null,
       status: 'PENDING',
-      collegeId: college.id,
     },
   })
 

@@ -8,7 +8,7 @@ import { cache, useCachedFetch } from '@/lib/cache'
 import RefreshButton from '@/components/ui/RefreshButton'
 import Toast from '@/components/ui/Toast'
 
-const modules = ['students', 'leaves', 'complaints'] as const
+const modules = ['students', 'leaves', 'complaints', 'announcements'] as const
 
 type Permission = {
   module: (typeof modules)[number]

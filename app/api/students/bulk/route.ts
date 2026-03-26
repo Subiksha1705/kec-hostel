@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { FeeStatus, Gender, StudentStatus } from '@prisma/client'
 import { getSession } from '@/lib/auth/session'
 import { hashPassword } from '@/lib/auth/password'
 import { ok, err } from '@/lib/api/response'
@@ -37,6 +38,21 @@ const rowSchema = z.object({
   hostel: z.string().optional().nullable(),
   hostelId: z.string().uuid().optional().nullable(),
 })
+
+const normalizeEnum = <T extends string>(
+  value: string,
+  allowed: readonly T[],
+  label: string
+): T => {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, '_')
+  const match = allowed.find((item) => item === normalized)
+  if (!match) throw new Error(`Invalid ${label}: ${value}`)
+  return match
+}
+
+const GENDER_VALUES = [Gender.MALE, Gender.FEMALE, Gender.OTHER] as const
+const STATUS_VALUES = [StudentStatus.ACTIVE, StudentStatus.INACTIVE, StudentStatus.PASSED_OUT] as const
+const FEE_VALUES = [FeeStatus.PAID, FeeStatus.PENDING, FeeStatus.OVERDUE] as const
 
 export async function POST(req: NextRequest) {
   try {
@@ -92,6 +108,23 @@ export async function POST(req: NextRequest) {
       }
       seenEmails.add(email)
 
+      let gender: Gender
+      let status: StudentStatus
+      let feeStatus: FeeStatus
+      try {
+        gender = normalizeEnum(data.gender, GENDER_VALUES, 'gender')
+        status = normalizeEnum(data.status, STATUS_VALUES, 'status')
+        feeStatus = normalizeEnum(data.feeStatus, FEE_VALUES, 'feeStatus')
+      } catch (error) {
+        results.push({
+          row: i + 1,
+          email,
+          status: 'skipped',
+          reason: error instanceof Error ? error.message : 'Invalid enum value',
+        })
+        continue
+      }
+
       let classId = data.classId ?? null
       if (!classId && data.class) {
         classId = classMap.get(data.class.toLowerCase()) ?? null
@@ -138,10 +171,10 @@ export async function POST(req: NextRequest) {
           year: data.year,
           roomNumber: data.roomNumber || null,
           bedNumber: data.bedNumber || null,
-          gender: data.gender,
+          gender,
           parentName: data.parentName,
           parentContact: data.parentContact,
-          status: data.status,
+          status,
           profileImage: data.profileImage,
           address: data.address,
           dateOfBirth: data.dateOfBirth,
@@ -150,7 +183,7 @@ export async function POST(req: NextRequest) {
           bloodGroup: data.bloodGroup,
           checkInDate: data.checkInDate,
           checkOutDate: data.checkOutDate,
-          feeStatus: data.feeStatus,
+          feeStatus,
           passOutYear: data.passOutYear,
           inYear: data.inYear,
           idCardPdf: data.idCardPdf,

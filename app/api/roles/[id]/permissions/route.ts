@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth/session'
 import { ok, err } from '@/lib/api/response'
 import { z } from 'zod'
 
-const MODULES = ['students', 'leaves', 'complaints'] as const
+const MODULES = ['students', 'leaves', 'complaints', 'announcements'] as const
 
 const permissionSchema = z.array(
   z.object({

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { CalendarCheck, CheckCircle2, Clock } from 'lucide-react'
 import { useCachedFetch } from '@/lib/cache'
 import RefreshButton from '@/components/ui/RefreshButton'
@@ -51,6 +52,9 @@ export default function StudentDashboardPage() {
         <h2 style={{ margin: 0, fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           Announcements
         </h2>
+        <Link href="/student/announcements" style={{ color: 'var(--sage-dark)', textDecoration: 'none' }}>
+          View all →
+        </Link>
       </div>
 
       <AnnouncementsCarousel announcements={announcements} />

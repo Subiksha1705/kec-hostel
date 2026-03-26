@@ -9,6 +9,8 @@ interface Announcement {
   title: string
   description: string
   imageUrl?: string | null
+  imageWidth?: number | null
+  imageHeight?: number | null
   linkUrl?: string | null
   linkLabel?: string | null
   postedBy: string
@@ -35,6 +37,10 @@ function formatDate(value: Date | string) {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 export default function AnnouncementsCarousel({ announcements }: Props) {
@@ -103,6 +109,10 @@ export default function AnnouncementsCarousel({ announcements }: Props) {
   }
 
   const activeAnnouncement = announcements[activeIndex]
+  const aspectRatio =
+    activeAnnouncement.imageWidth && activeAnnouncement.imageHeight
+      ? `${activeAnnouncement.imageWidth} / ${activeAnnouncement.imageHeight}`
+      : '16 / 9'
 
   return (
     <div
@@ -123,7 +133,12 @@ export default function AnnouncementsCarousel({ announcements }: Props) {
     >
       <div className="relative">
         <div
-          className={`relative h-44 w-full overflow-hidden rounded-xl transition-all duration-300 ${transitionClass}`}
+          className={`relative w-full overflow-hidden rounded-xl transition-all duration-300 ${transitionClass}`}
+          style={{
+            aspectRatio,
+            maxHeight: '360px',
+            background: 'var(--surface-2)',
+          }}
         >
           {activeAnnouncement.imageUrl ? (
             <Image
@@ -131,7 +146,7 @@ export default function AnnouncementsCarousel({ announcements }: Props) {
               alt={activeAnnouncement.title}
               fill
               unoptimized
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 1280px) 100vw, 360px"
             />
           ) : (
@@ -158,7 +173,9 @@ export default function AnnouncementsCarousel({ announcements }: Props) {
         <h3 className="line-clamp-2 text-lg font-semibold" style={{ fontFamily: 'var(--font-dm-serif), "DM Serif Display", serif' }}>
           {activeAnnouncement.title}
         </h3>
-        <p className="line-clamp-3 text-sm text-[var(--text-secondary)]">{activeAnnouncement.description}</p>
+        <p className="line-clamp-3 text-sm text-[var(--text-secondary)]">
+          {stripHtml(activeAnnouncement.description)}
+        </p>
       </div>
 
       <div className={`mt-4 flex items-center justify-between gap-2 transition-all duration-300 ${transitionClass}`}>
