@@ -16,4 +16,5 @@ jobs:
       - run: yarn prisma generate
       - run: yarn prisma migrate resolve --rolled-back "20260326133000_strong_schema_updates"
         env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
           DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
