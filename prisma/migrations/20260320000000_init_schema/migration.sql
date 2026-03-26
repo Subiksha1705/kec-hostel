@@ -256,19 +256,19 @@ CREATE TABLE IF NOT EXISTS "Gallery" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Admin_email_key" ON "Admin"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "Admin_email_key" ON "Admin"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RolePermission_roleId_module_key" ON "RolePermission"("roleId", "module");
+CREATE UNIQUE INDEX IF NOT EXISTS "RolePermission_roleId_module_key" ON "RolePermission"("roleId", "module");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AdminMember_email_key" ON "AdminMember"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "AdminMember_email_key" ON "AdminMember"("email");
 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "ChatbotKnowledgeSource_collegeId_idx" ON "ChatbotKnowledgeSource"("collegeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Student_email_key" ON "Student"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "Student_email_key" ON "Student"("email");
 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "Student_collegeId_idx" ON "Student"("collegeId");
@@ -295,7 +295,7 @@ CREATE INDEX IF NOT EXISTS "Leave_collegeId_idx" ON "Leave"("collegeId");
 CREATE INDEX IF NOT EXISTS "Leave_status_idx" ON "Leave"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "StudentFaculty_studentId_memberId_key" ON "StudentFaculty"("studentId", "memberId");
+CREATE UNIQUE INDEX IF NOT EXISTS "StudentFaculty_studentId_memberId_key" ON "StudentFaculty"("studentId", "memberId");
 
 -- AddForeignKey
 ALTER TABLE "Admin" ADD CONSTRAINT "Admin_collegeId_fkey" FOREIGN KEY ("collegeId") REFERENCES "College"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
